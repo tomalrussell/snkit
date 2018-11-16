@@ -1,0 +1,6 @@
+# settings
+.vscode
+
+# python
+*.egg-info
+*.pyc
