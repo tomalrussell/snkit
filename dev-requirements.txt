@@ -1,0 +1,10 @@
+# requirements
+fiona>=1.7.13
+shapely>=1.6
+geopandas==0.4.0
+rtree>=0.8
+
+# test/lint
+pylint
+pytest
+pytest-cov
