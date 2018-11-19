@@ -5,6 +5,7 @@ from pytest import fixture
 from shapely.geometry import Point, LineString
 
 import snkit
+import snkit.network
 
 
 @fixture
@@ -68,3 +69,13 @@ def test_init():
     net = snkit.Network()
     assert len(net.nodes) == 0
     assert len(net.edges) == 0
+
+
+def test_add_ids(edge_only, connected):
+    edge_with_ids = snkit.network.add_ids(edge_only)
+    assert list(edge_with_ids.edges.id) == ['edge_0']
+    assert list(edge_with_ids.nodes.id) == []
+
+    net_with_ids = snkit.network.add_ids(connected)
+    assert list(net_with_ids.edges.id) == ['edge_0']
+    assert list(net_with_ids.nodes.id) == ['node_0', 'node_1']
