@@ -2,7 +2,8 @@
 """
 from geopandas import GeoDataFrame
 import pandas
-from shapely.geometry import Point
+from shapely.geometry import Point, MultiPoint
+from shapely.ops import split
 
 
 class Network():
@@ -141,3 +142,33 @@ def nearest_point_on_line(point, line):
     """Return the nearest point on a line
     """
     return line.interpolate(line.project(point))
+
+
+def split_edges_at_nodes(network):
+    """Split network edges where they intersect node geometries
+    """
+    split_edges = []
+    for i, edge in enumerate(network.edges.itertuples()):
+        # find nodes intersecting edge
+        bounds = edge.geometry.bounds
+        candidate_idxs = list(network.nodes.sindex.intersection(bounds))
+        candidates = network.nodes.iloc[candidate_idxs]
+        hits = candidates[candidates.intersects(edge.geometry)]
+        split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
+
+        # potentially split to multiple edges
+        segments = list(split(edge.geometry, split_points))
+        ix = [i] * len(segments)
+        dup_edges = network.edges.iloc[ix].copy()
+        dup_edges.geometry = segments
+        split_edges.append(dup_edges)
+
+    # combine dfs
+    edges = pandas.concat(split_edges, axis=0)
+    # reset index and drop
+    edges = edges.reset_index().drop('index', axis=1)
+    # return new network with split edges
+    return Network(
+        nodes=network.nodes,
+        edges=edges
+    )

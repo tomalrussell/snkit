@@ -1,6 +1,7 @@
 """Test core objects/concepts
 """
 from geopandas import GeoDataFrame
+from pandas import RangeIndex
 from pandas.testing import assert_frame_equal
 from pytest import fixture
 from shapely.geometry import Point, LineString
@@ -37,9 +38,9 @@ def nodes_only():
 @fixture
 def connected():
     """Edge with nodes:
-        x
+        b
         |
-        x
+        a
     """
     edge = LineString([(0, 0), (0, 2)])
     point_a = Point((0, 0))
@@ -52,15 +53,56 @@ def connected():
 @fixture
 def misaligned():
     """Edge with nodes offset:
-      x |
+      b |
         |
-        | x
+        | a
     """
     edge = LineString([(0, 0), (0, 2)])
     point_a = Point((0.5, 0))
     point_b = Point((-0.5, 2))
     edges = GeoDataFrame([{'geometry': edge}])
     nodes = GeoDataFrame([{'geometry': point_a}, {'geometry': point_b}])
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def unsplit():
+    """T-junction with nodes, long edge not split:
+      b
+      |
+      |c--d
+      |
+      a
+    """
+    edge_ab = LineString([(0, 0), (0, 2)])
+    edge_cd = LineString([(0, 1), (1, 1)])
+    point_a = Point((0, 0))
+    point_b = Point((0, 2))
+    point_c = Point((0, 1))
+    point_d = Point((1, 1))
+    edges = GeoDataFrame([edge_ab, edge_cd], columns=['geometry'])
+    nodes = GeoDataFrame([point_a, point_b, point_c, point_d], columns=['geometry'])
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split():
+    """T-junction with nodes, long edge split:
+      b
+      |
+      c--d
+      |
+      a
+    """
+    edge_ac = LineString([(0, 0), (0, 1)])
+    edge_cb = LineString([(0, 1), (0, 2)])
+    edge_cd = LineString([(0, 1), (1, 1)])
+    point_a = Point((0, 0))
+    point_b = Point((0, 2))
+    point_c = Point((0, 1))
+    point_d = Point((1, 1))
+    edges = GeoDataFrame([edge_ac, edge_cb, edge_cd], columns=['geometry'])
+    nodes = GeoDataFrame([point_a, point_b, point_c, point_d], columns=['geometry'])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -100,3 +142,12 @@ def test_snap_nodes(misaligned, connected):
     # don't move if under threshold
     snapped = snkit.network.snap_nodes(misaligned, threshold=0.1)
     assert_frame_equal(snapped.nodes, misaligned.nodes)
+
+
+def test_split_at_nodes(unsplit, split):
+    """Should split edges at nodes, duplicating attributes if any
+    """
+    actual = snkit.network.split_edges_at_nodes(unsplit)
+    print(actual.edges)
+    actual.edges.reindex(labels=list(range(len(actual.edges))))
+    assert_frame_equal(split.edges, actual.edges)
