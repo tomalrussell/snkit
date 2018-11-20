@@ -54,10 +54,19 @@ def get_endpoints(network):
     """
     endpoints = []
     for edge in network.edges.itertuples():
-        start = Point(edge.geometry.coords[0])
-        end = Point(edge.geometry.coords[-1])
-        endpoints.append(start)
-        endpoints.append(end)
+        if edge.geometry is None:
+            continue
+        if edge.geometry.geometryType() == 'MultiLineString':
+            for line in edge.geometry.geoms:
+                start = Point(line.coords[0])
+                end = Point(line.coords[-1])
+                endpoints.append(start)
+                endpoints.append(end)
+        else:
+            start = Point(edge.geometry.coords[0])
+            end = Point(edge.geometry.coords[-1])
+            endpoints.append(start)
+            endpoints.append(end)
 
     # create dataframe to match the nodes geometry column name
     geom_col = geometry_column_name(network.nodes)
