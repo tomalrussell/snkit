@@ -159,7 +159,10 @@ def split_edges_at_nodes(network):
     split_edges = []
     for i, edge in enumerate(network.edges.itertuples()):
         # find nodes intersecting edge
-        hits = network.nodes[network.nodes.intersects(edge.geometry)]
+        bounds = edge.geometry.bounds
+        candidate_idxs = list(network.nodes.sindex.intersection(bounds))
+        candidates = network.nodes.iloc[candidate_idxs]
+        hits = candidates[candidates.intersects(edge.geometry)]
         split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
 
         # potentially split to multiple edges
