@@ -1,6 +1,7 @@
 """Test core objects/concepts
 """
 from geopandas import GeoDataFrame
+from pandas.testing import assert_frame_equal
 from pytest import fixture
 from shapely.geometry import Point, LineString
 
@@ -64,7 +65,7 @@ def misaligned():
 
 
 def test_init():
-    """Create an empty network
+    """Should create an empty network
     """
     net = snkit.Network()
     assert len(net.nodes) == 0
@@ -72,6 +73,8 @@ def test_init():
 
 
 def test_add_ids(edge_only, connected):
+    """Should add ids to network nodes and columns
+    """
     edge_with_ids = snkit.network.add_ids(edge_only)
     assert list(edge_with_ids.edges.id) == ['edge_0']
     assert list(edge_with_ids.nodes.id) == []
@@ -79,3 +82,10 @@ def test_add_ids(edge_only, connected):
     net_with_ids = snkit.network.add_ids(connected)
     assert list(net_with_ids.edges.id) == ['edge_0']
     assert list(net_with_ids.nodes.id) == ['node_0', 'node_1']
+
+
+def test_add_endpoints(edge_only, connected):
+    """Should add nodes at edge endpoints
+    """
+    with_endpoints = snkit.network.add_endpoints(edge_only)
+    assert_frame_equal(with_endpoints.nodes, connected.nodes)
