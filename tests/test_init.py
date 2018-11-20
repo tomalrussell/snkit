@@ -89,3 +89,14 @@ def test_add_endpoints(edge_only, connected):
     """
     with_endpoints = snkit.network.add_endpoints(edge_only)
     assert_frame_equal(with_endpoints.nodes, connected.nodes)
+
+
+def test_snap_nodes(misaligned, connected):
+    """Should snap nodes to edges
+    """
+    snapped = snkit.network.snap_nodes(misaligned)
+    assert_frame_equal(snapped.nodes, connected.nodes)
+
+    # don't move if under threshold
+    snapped = snkit.network.snap_nodes(misaligned, threshold=0.1)
+    assert_frame_equal(snapped.nodes, misaligned.nodes)

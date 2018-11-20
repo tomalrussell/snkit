@@ -59,11 +59,18 @@ def get_endpoints(network):
         endpoints.append(end)
 
     # create dataframe to match the nodes geometry column name
+    geom_col = geometry_column_name(network.nodes)
+    return drop_duplicate_geometries(GeoDataFrame(endpoints, columns=[geom_col]))
+
+
+def geometry_column_name(gdf):
+    """Get geometry column name, fall back to 'geometry'
+    """
     try:
-        geom_col = network.nodes.geometry.name
+        geom_col = gdf.geometry.name
     except AttributeError:
         geom_col = 'geometry'
-    return drop_duplicate_geometries(GeoDataFrame(endpoints, columns=[geom_col]))
+    return geom_col
 
 
 def add_endpoints(network):
@@ -86,3 +93,51 @@ def drop_duplicate_geometries(gdf, keep='first'):
     mask = gdf.geometry.apply(lambda geom: geom.wkb)
     # use dropped duplicates index to drop from actual dataframe
     return gdf.loc[mask.drop_duplicates(keep).index]
+
+
+def snap_nodes(network, threshold=None):
+    """Move nodes (within threshold) to edges
+    """
+    def snap_node(node):
+        snap = nearest_point_on_edges(node.geometry, network.edges)
+        distance = snap.distance(node.geometry)
+        if threshold is not None and distance > threshold:
+            snap = node.geometry
+        return snap
+
+    snapped_geoms = network.nodes.apply(snap_node, axis=1)
+    geom_col = geometry_column_name(network.nodes)
+    nodes = pandas.concat([
+        network.nodes.drop(geom_col, axis=1),
+        GeoDataFrame(snapped_geoms, columns=[geom_col])
+    ], axis=1)
+
+    return Network(
+        nodes=nodes,
+        edges=network.edges
+    )
+
+
+def nearest_point_on_edges(point, edges):
+    """Find nearest point on edges to a point
+    """
+    edge = nearest_edge(point, edges)
+    snap = nearest_point_on_line(point, edge.geometry)
+    return snap
+
+
+def nearest_edge(point, edges):
+    """Find nearest edge to a point
+    """
+    query = (point.x, point.y, point.x, point.y)
+    matches_idx = list(edges.sindex.nearest(query))
+    assert len(matches_idx) == 1
+    for m in matches_idx:
+        match = edges.iloc[m]
+    return match
+
+
+def nearest_point_on_line(point, line):
+    """Return the nearest point on a line
+    """
+    return line.interpolate(line.project(point))
