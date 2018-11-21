@@ -1,9 +1,20 @@
 """Network representation and utilities
 """
-from geopandas import GeoDataFrame
+import os
+
 import pandas
+from geopandas import GeoDataFrame
 from shapely.geometry import Point, MultiPoint
 from shapely.ops import split
+
+# optional progress bars
+if 'SNKIT_PROGRESS' in os.environ and os.environ['SNKIT_PROGRESS'] in ('1', 'TRUE'):
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from snkit.utils import tqdm_standin as tqdm
+else:
+    from snkit.utils import tqdm_standin as tqdm
 
 
 class Network():
@@ -53,7 +64,7 @@ def get_endpoints(network):
     """Get nodes for each edge endpoint
     """
     endpoints = []
-    for edge in network.edges.itertuples():
+    for edge in tqdm(network.edges.itertuples(), desc="endpoints", max=len(network.edges)):
         if edge.geometry is None:
             continue
         if edge.geometry.geometryType() == 'MultiLineString':
@@ -73,16 +84,6 @@ def get_endpoints(network):
     return drop_duplicate_geometries(GeoDataFrame(endpoints, columns=[geom_col]))
 
 
-def geometry_column_name(gdf):
-    """Get geometry column name, fall back to 'geometry'
-    """
-    try:
-        geom_col = gdf.geometry.name
-    except AttributeError:
-        geom_col = 'geometry'
-    return geom_col
-
-
 def add_endpoints(network):
     """Add nodes at line endpoints
     """
@@ -93,16 +94,6 @@ def add_endpoints(network):
         nodes=nodes,
         edges=network.edges
     )
-
-
-def drop_duplicate_geometries(gdf, keep='first'):
-    """Drop duplicate geometries from a dataframe
-    """
-    # convert to wkb so drop_duplicates will work
-    # discussed in https://github.com/geopandas/geopandas/issues/521
-    mask = gdf.geometry.apply(lambda geom: geom.wkb)
-    # use dropped duplicates index to drop from actual dataframe
-    return gdf.loc[mask.drop_duplicates(keep).index]
 
 
 def snap_nodes(network, threshold=None):
@@ -128,6 +119,50 @@ def snap_nodes(network, threshold=None):
     )
 
 
+def split_edges_at_nodes(network):
+    """Split network edges where they intersect node geometries
+    """
+    split_edges = []
+    for i, edge in tqdm(
+            enumerate(network.edges.itertuples(index=False)), desc="split", max=len(network.edges)):
+        hits = nodes_intersecting(edge.geometry, network.nodes)
+        split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
+
+        # potentially split to multiple edges
+        edges = split_edge_at_points(edge, split_points)
+        split_edges.append(edges)
+
+    # combine dfs
+    edges = pandas.concat(split_edges, axis=0)
+    # reset index and drop
+    edges = edges.reset_index().drop('index', axis=1)
+    # return new network with split edges
+    return Network(
+        nodes=network.nodes,
+        edges=edges
+    )
+
+
+def geometry_column_name(gdf):
+    """Get geometry column name, fall back to 'geometry'
+    """
+    try:
+        geom_col = gdf.geometry.name
+    except AttributeError:
+        geom_col = 'geometry'
+    return geom_col
+
+
+def drop_duplicate_geometries(gdf, keep='first'):
+    """Drop duplicate geometries from a dataframe
+    """
+    # convert to wkb so drop_duplicates will work
+    # discussed in https://github.com/geopandas/geopandas/issues/521
+    mask = gdf.geometry.apply(lambda geom: geom.wkb)
+    # use dropped duplicates index to drop from actual dataframe
+    return gdf.loc[mask.drop_duplicates(keep).index]
+
+
 def nearest_point_on_edges(point, edges):
     """Find nearest point on edges to a point
     """
@@ -147,37 +182,30 @@ def nearest_edge(point, edges):
     return match
 
 
+def edges_within(point, edges, distance):
+    """Find edges within a distance of point
+    """
+    pass
+
+def nodes_intersecting(line, nodes):
+    """Find nodes intersecting line
+    """
+    bounds = line.bounds
+    candidate_idxs = list(nodes.sindex.intersection(bounds))
+    candidates = nodes.iloc[candidate_idxs]
+    return candidates[candidates.intersects(line)]
+
+
+def split_edge_at_points(edge, points):
+    """Split edge at point/multipoint
+    """
+    segments = list(split(edge.geometry, points))
+    edges = GeoDataFrame([edge] * len(segments))
+    edges.geometry = segments
+    return edges
+
+
 def nearest_point_on_line(point, line):
     """Return the nearest point on a line
     """
     return line.interpolate(line.project(point))
-
-
-def split_edges_at_nodes(network):
-    """Split network edges where they intersect node geometries
-    """
-    split_edges = []
-    for i, edge in enumerate(network.edges.itertuples()):
-        # find nodes intersecting edge
-        bounds = edge.geometry.bounds
-        candidate_idxs = list(network.nodes.sindex.intersection(bounds))
-        candidates = network.nodes.iloc[candidate_idxs]
-        hits = candidates[candidates.intersects(edge.geometry)]
-        split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
-
-        # potentially split to multiple edges
-        segments = list(split(edge.geometry, split_points))
-        ix = [i] * len(segments)
-        dup_edges = network.edges.iloc[ix].copy()
-        dup_edges.geometry = segments
-        split_edges.append(dup_edges)
-
-    # combine dfs
-    edges = pandas.concat(split_edges, axis=0)
-    # reset index and drop
-    edges = edges.reset_index().drop('index', axis=1)
-    # return new network with split edges
-    return Network(
-        nodes=network.nodes,
-        edges=edges
-    )
