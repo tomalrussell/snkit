@@ -106,6 +106,49 @@ def split():
     return snkit.Network(edges=edges, nodes=nodes)
 
 
+@fixture
+def gap():
+    """T-junction with nodes, edges not quite intersecting:
+      b
+      |
+      | c--d
+      |
+      a
+    """
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((0.1, 1))
+    d = Point((1, 1))
+    nodes = GeoDataFrame([a, b, c, d], columns=['geometry'])
+    ab = LineString([a, b])
+    cd = LineString([c, d])
+    edges = GeoDataFrame([ab, cd], columns=['geometry'])
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def bridged():
+    """T-junction with nodes, bridged by short edge:
+      b
+      |
+      e-c--d
+      |
+      a
+    """
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((0.1, 1))
+    d = Point((1, 1))
+    e = Point((0, 1))
+    nodes = GeoDataFrame([a, b, c, d, e], columns=['geometry'])
+    ae = LineString([a, e])
+    eb = LineString([e, b])
+    cd = LineString([c, d])
+    ce = LineString([c, e])
+    edges = GeoDataFrame([ae, eb, cd, ce], columns=['geometry'])
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
 def test_init():
     """Should create an empty network
     """
@@ -148,6 +191,9 @@ def test_split_at_nodes(unsplit, split):
     """Should split edges at nodes, duplicating attributes if any
     """
     actual = snkit.network.split_edges_at_nodes(unsplit)
-    print(actual.edges)
-    actual.edges.reindex(labels=list(range(len(actual.edges))))
     assert_frame_equal(split.edges, actual.edges)
+
+def test_link_nodes_to_edges_within(gap, bridged):
+    actual = snkit.network.link_nodes_to_edges_within(gap, distance=0.1)
+    assert_frame_equal(actual.nodes, bridged.nodes)
+    assert_frame_equal(actual.edges, bridged.edges)
