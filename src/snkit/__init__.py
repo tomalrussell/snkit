@@ -17,8 +17,6 @@ except Exception:
     __version__ = 'unknown'
 
 
-
-
 # Define what should be imported as * when a client writes::
 #   from snkit import *
 __all__ = ['Network']
