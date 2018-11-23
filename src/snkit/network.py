@@ -219,7 +219,7 @@ def concat_dedup(dfs):
     """Concatenate a list of GeoDataFrames, dropping duplicate geometries
     - note: repeatedly drops indexes for deduplication to work
     """
-    cat = pandas.concat(dfs, axis=0)
+    cat = pandas.concat(dfs, axis=0, sort=False)
     cat.reset_index(drop=True, inplace=True)
     cat_dedup = drop_duplicate_geometries(cat)
     cat_dedup.reset_index(drop=True, inplace=True)
