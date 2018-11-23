@@ -95,13 +95,11 @@ def get_endpoints(network, process=None):
             continue
         if edge.geometry.geometryType() == 'MultiLineString':
             for line in edge.geometry.geoms:
-                start = Point(line.coords[0])
-                end = Point(line.coords[-1])
+                start, end = line_endpoints(line)
                 endpoints.append(start)
                 endpoints.append(end)
         else:
-            start = Point(edge.geometry.coords[0])
-            end = Point(edge.geometry.coords[-1])
+            start, end = line_endpoints(edge.geometry)
             endpoints.append(start)
             endpoints.append(end)
 
@@ -294,7 +292,15 @@ def intersects(geom, gdf):
     return candidates[candidates.intersects(geom)]
 
 
-def split_edge_at_points(edge, points):
+def line_endpoints(line):
+    """Return points at first and last vertex of a line
+    """
+    start = Point(line.coords[0])
+    end = Point(line.coords[-1])
+    return start, end
+
+
+def split_edge_at_points(edge, points, tolerance=1e-3):
     """Split edge at point/multipoint
     """
     segments = list(split(edge.geometry, points))
