@@ -183,6 +183,13 @@ def test_init():
     assert len(net.edges) == 0
 
 
+def test_round_geometries(misaligned, connected):
+    """Should round coordinates to some tolerance
+    """
+    rounded = snkit.network.round_geometries(misaligned, precision=0)
+    assert_frame_equal(rounded.nodes, connected.nodes)
+
+
 def test_add_ids(edge_only, connected):
     """Should add ids to network nodes and columns
     """

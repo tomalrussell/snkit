@@ -2,9 +2,11 @@
 """
 import os
 
+import numpy as np
 import pandas
+
 from geopandas import GeoDataFrame
-from shapely.geometry import Point, MultiPoint, LineString
+from shapely.geometry import Point, MultiPoint, LineString, shape, mapping
 from shapely.ops import split
 
 # optional progress bars
@@ -85,7 +87,6 @@ def add_topology(network, id_col='id'):
     )
 
 
-
 def get_endpoints(network, process=None):
     """Get nodes for each edge endpoint
     """
@@ -117,6 +118,16 @@ def add_endpoints(network):
         nodes=nodes,
         edges=network.edges
     )
+
+
+def round_geometries(network, precision=3):
+    """Round coordinates of all node points and vertices of edge linestrings to some precision
+    """
+    def _set_precision(geom):
+        return set_precision(geom, precision)
+    network.nodes.geometry = network.nodes.geometry.apply(_set_precision)
+    network.edges.geometry = network.edges.geometry.apply(_set_precision)
+    return network
 
 
 def snap_nodes(network, threshold=None):
@@ -386,3 +397,11 @@ def nearest_point_on_line(point, line):
     """Return the nearest point on a line
     """
     return line.interpolate(line.project(point))
+
+
+def set_precision(geom, precision):
+    """Set geometry precision
+    """
+    geom_mapping = mapping(geom)
+    geom_mapping['coordinates'] = np.round(np.array(geom_mapping['coordinates']), precision)
+    return shape(geom_mapping)
