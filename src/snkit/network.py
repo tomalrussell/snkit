@@ -90,7 +90,7 @@ def get_endpoints(network, process=None):
     """Get nodes for each edge endpoint
     """
     endpoints = []
-    for edge in tqdm(network.edges.itertuples(), desc="endpoints", max=len(network.edges)):
+    for edge in tqdm(network.edges.itertuples(), desc="endpoints"):
         if edge.geometry is None:
             continue
         if edge.geometry.geometryType() == 'MultiLineString':
@@ -148,8 +148,7 @@ def split_edges_at_nodes(network):
     """Split network edges where they intersect node geometries
     """
     split_edges = []
-    for edge in tqdm(
-            network.edges.itertuples(index=False), desc="split", max=len(network.edges)):
+    for edge in tqdm(network.edges.itertuples(index=False), desc="split"):
         hits = nodes_intersecting(edge.geometry, network.nodes)
         split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
 
@@ -173,8 +172,7 @@ def link_nodes_to_edges_within(network, distance):
     """
     new_node_geoms = []
     new_edge_geoms = []
-    for node in tqdm(
-            network.nodes.itertuples(index=False), desc="link", max=len(network.nodes)):
+    for node in tqdm(network.nodes.itertuples(index=False), desc="link"):
         # for each node, find edges within
         edges = edges_within(node.geometry, network.edges, distance)
         for edge in edges.itertuples():
