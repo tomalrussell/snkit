@@ -219,7 +219,69 @@ def test_split_at_nodes(unsplit, split):
     actual = snkit.network.split_edges_at_nodes(unsplit)
     assert_frame_equal(split.edges, actual.edges)
 
+
+def test_split_line():
+    """Definitively split line at a point
+    """
+    line = LineString([
+        (273157.33178339572623372, 5789362.55751010309904814),
+        (273134.25517477234825492, 5789314.91026492696255445),
+    ])
+    point = Point(273151.75418011785950512, 5789351.04119784012436867)
+    segments = snkit.network.split_line(line, point)
+    assert point.distance(line) < 1e-9
+    assert len(segments) == 2
+
+    line = LineString([
+        (1038390.701003063, 6945982.90058485),
+        (1037867.399055927, 6943088.583528072),
+    ])
+    points = MultiPoint([
+        (1037867.399055927, 6943088.583528072),
+        (1037867.399081285, 6943088.583668322),
+        (1037867.400031154, 6943088.583835071),
+        (1038390.701003063, 6945982.90058485),
+        (1038390.701021349, 6945982.900686138),
+        (1038390.701061018, 6945982.900786115)
+    ])
+    segments = snkit.network.split_line(line, points, tolerance=1e-3)
+    for point in points:
+        assert point.distance(line) < 1e-3
+    assert len(segments) == 5
+
+    line = LineString([
+        (1111849.810325465, 6791469.122112891), #1
+        (1111935.678092212, 6791104.869596513), #2
+        (1112151.958236065, 6790264.085704206), #3
+        (1112606.312094527, 6789678.939913818), #4
+        (1112725.292801428, 6789178.128700008), #5
+        (1112796.932870851, 6789012.113559419), #6
+        (1112886.754280969, 6788371.470671637), #7
+        (1112942.209796557, 6787971.608098711), #8
+    ])
+    points = MultiPoint([
+        (1111849.810325465, 6791469.122112891), #1
+        (1112942.209819941, 6787971.607780417), # a
+        (1112942.210585088, 6787971.609669216), # b
+        (1111849.810544952, 6791469.121181826), # c
+        (1112942.209796557, 6787971.608098711), #8
+    ])
+
+    segments = snkit.network.split_line(line, points, tolerance=1e-3)
+    for point in points:
+        assert point.distance(line) < 1e-3
+    for segment in segments:
+        print(segment)
+    assert len(segments) == len(points) - 1
+
+    # consider duplicate points in linestring or in multipoint
+    # consider points which will be considered duplicate within tolerance
+
+
 def test_link_nodes_to_edges_within(gap, bridged):
+    """Nodes should link to edges within a distance, splitting the node at a new point if
+    necessary.
+    """
     actual = snkit.network.link_nodes_to_edges_within(gap, distance=0.1)
     assert_frame_equal(actual.nodes, bridged.nodes)
     assert_frame_equal(actual.edges, bridged.edges)

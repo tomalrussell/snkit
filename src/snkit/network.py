@@ -273,25 +273,32 @@ def edges_within(point, edges, distance):
     return d_within(point, edges, distance)
 
 
-def nodes_intersecting(line, nodes):
+def nodes_intersecting(line, nodes, tolerance=1e-3):
     """Find nodes intersecting line
     """
-    return intersects(line, nodes)
+    return intersects(line, nodes, tolerance)
+
+
+def intersects(geom, gdf, tolerance=1e-3):
+    """Find the subset of a GeoDataFrame intersecting with a shapely geometry
+    """
+    return _intersects(geom, gdf, tolerance)
 
 
 def d_within(geom, gdf, distance):
     """Find the subset of a GeoDataFrame within some distance of a shapely geometry
     """
-    buf = geom.buffer(distance)
-    return intersects(buf, gdf)
+    return _intersects(geom, gdf, distance)
 
 
-def intersects(geom, gdf):
-    """Find the subset of a GeoDataFrame intersecting with a shapely geometry
-    """
-    candidate_idxs = list(gdf.sindex.intersection(geom.bounds))
+def _intersects(geom, gdf, tolerance=1e-3):
+    buf = geom.buffer(tolerance)
+    if buf.is_empty:
+        # can have an empty buffer with too small a tolerance, fallback to original geom
+        buf = geom
+    candidate_idxs = list(gdf.sindex.intersection(buf.bounds))
     candidates = gdf.iloc[candidate_idxs]
-    return candidates[candidates.intersects(geom)]
+    return candidates[candidates.intersects(buf)]
 
 
 def line_endpoints(line):
@@ -305,10 +312,74 @@ def line_endpoints(line):
 def split_edge_at_points(edge, points, tolerance=1e-3):
     """Split edge at point/multipoint
     """
-    segments = list(split(edge.geometry, points))
+    segments = split_line(edge.geometry, points, tolerance)
     edges = GeoDataFrame([edge] * len(segments))
     edges.geometry = segments
     return edges
+
+
+def split_line(line, points, tolerance=1e-3):
+    """Split line at point or multipoint, within some tolerance
+    """
+    to_split = snap_line(line, points, tolerance)
+    return list(split(to_split, points))
+
+
+def snap_line(line, points, tolerance=1e-3):
+    """Snap a line to points within tolerance, inserting vertices as necessary
+    """
+    if points.geom_type == 'Point':
+        if points.distance(line) < tolerance:
+            line = add_vertex(line, points)
+    elif points.geom_type == 'MultiPoint':
+        points = [point for point in points if point.distance(line) < tolerance]
+        for point in points:
+            line = add_vertex(line, point)
+    return line
+
+
+def add_vertex(line, point):
+    """Add a vertex to a line at a point
+    """
+    v_idx = nearest_vertex_idx_on_line(point, line)
+    point_coords = tuple(point.coords[0])
+
+    if point_coords == line.coords[v_idx]:
+        # nearest vertex could be identical to point, so return unchanged
+        return line
+
+    insert_before_idx = None
+    if v_idx == 0:
+        # nearest vertex could be start, so insert just after (or could extend)
+        insert_before_idx = 1
+    elif v_idx == len(line.coords) - 1:
+        # nearest vertex could be end, so insert just before (or could extend)
+        insert_before_idx = v_idx
+    else:
+        # otherwise insert in between vertices of nearest segment
+        segment_before = LineString([line.coords[v_idx], line.coords[v_idx - 1]])
+        segment_after = LineString([line.coords[v_idx], line.coords[v_idx + 1]])
+        if point.distance(segment_before) < point.distance(segment_after):
+            insert_before_idx = v_idx
+        else:
+            insert_before_idx = v_idx + 1
+    # insert point coords before index, return new linestring
+    new_coords = list(line.coords)
+    new_coords.insert(insert_before_idx, point_coords)
+    return LineString(new_coords)
+
+
+def nearest_vertex_idx_on_line(point, line):
+    """Return the index of nearest vertex to a point on a line
+    """
+    # distance to all points is calculated here - and this is called once per splitting point
+    # any way to avoid this m x n behaviour?
+    nearest_idx, _ = min(
+        [(idx, point.distance(Point(coords))) for idx, coords in enumerate(line.coords)],
+        key=lambda item: item[1]
+    )
+    return nearest_idx
+
 
 
 def nearest_point_on_line(point, line):
