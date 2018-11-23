@@ -60,7 +60,33 @@ def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node'):
     )
 
 
-def get_endpoints(network):
+def add_topology(network, id_col='id'):
+    """Add from_id, to_id to edges
+    """
+    from_ids = []
+    to_ids = []
+    for edge in tqdm(network.edges.itertuples(), desc="endpoints"):
+        start, end = line_endpoints(edge.geometry)
+
+        start_node = nearest_node(start, network.nodes)
+        from_ids.append(start_node[id_col])
+
+        end_node = nearest_node(end, network.nodes)
+        to_ids.append(end_node[id_col])
+
+    ids = pandas.DataFrame(data={
+        'from_id': from_ids,
+        'to_id': to_ids
+    })
+
+    return Network(
+        nodes=network.nodes,
+        edges=pandas.concat([network.edges, ids], axis=1)
+    )
+
+
+
+def get_endpoints(network, process=None):
     """Get nodes for each edge endpoint
     """
     endpoints = []
@@ -220,15 +246,27 @@ def nearest_point_on_edges(point, edges):
     return snap
 
 
+def nearest_node(point, nodes):
+    """Find nearest node to a point
+    """
+    return nearest(point, nodes)
+
+
 def nearest_edge(point, edges):
     """Find nearest edge to a point
     """
-    query = (point.x, point.y, point.x, point.y)
-    matches_idx = list(edges.sindex.nearest(query))
-    assert len(matches_idx) == 1
-    for m in matches_idx:
-        match = edges.iloc[m]
-    return match
+    return nearest(point, edges)
+
+
+def nearest(geom, gdf):
+    """Find the element of a GeoDataFrame nearest a shapely geometry
+    """
+    matches_idx = gdf.sindex.nearest(geom.bounds)
+    nearest = min(
+        [gdf.iloc[match_idx] for match_idx in matches_idx],
+        key=lambda match: geom.distance(match.geometry)
+    )
+    return nearest
 
 
 def edges_within(point, edges, distance):

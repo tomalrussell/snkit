@@ -94,15 +94,41 @@ def split():
       |
       a
     """
-    edge_ac = LineString([(0, 0), (0, 1)])
-    edge_cb = LineString([(0, 1), (0, 2)])
-    edge_cd = LineString([(0, 1), (1, 1)])
-    point_a = Point((0, 0))
-    point_b = Point((0, 2))
-    point_c = Point((0, 1))
-    point_d = Point((1, 1))
-    edges = GeoDataFrame([edge_ac, edge_cb, edge_cd], columns=['geometry'])
-    nodes = GeoDataFrame([point_a, point_b, point_c, point_d], columns=['geometry'])
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((0, 1))
+    d = Point((1, 1))
+    nodes = GeoDataFrame([a, b, c, d], columns=['geometry'])
+    ac = LineString([a, c])
+    cb = LineString([c, b])
+    cd = LineString([c, d])
+    edges = GeoDataFrame([ac, cb, cd], columns=['geometry'])
+    return snkit.Network(edges=edges, nodes=nodes)
+
+@fixture
+def split_with_ids():
+    """T-junction with nodes, long edge split, and node and edge ids:
+      b
+     2| 3
+      c---d
+     1|
+      a
+    """
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((0, 1))
+    d = Point((1, 1))
+    nodes = GeoDataFrame(data={
+        'geometry': [a, b, c, d],
+        'id': ['a', 'b', 'c', 'd']
+    })
+    ac = LineString([a, c])
+    cb = LineString([c, b])
+    cd = LineString([c, d])
+    edges = GeoDataFrame(data={
+        'geometry': [ac, cb, cd],
+        'id': [1, 2, 3]
+    })
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -197,3 +223,34 @@ def test_link_nodes_to_edges_within(gap, bridged):
     actual = snkit.network.link_nodes_to_edges_within(gap, distance=0.1)
     assert_frame_equal(actual.nodes, bridged.nodes)
     assert_frame_equal(actual.edges, bridged.edges)
+
+def test_assign_topology(split_with_ids):
+    """Given network
+      b
+     2| 3
+      c---d
+     1|
+      a
+    """
+    topo = snkit.network.add_topology(split_with_ids)
+    assert list(topo.nodes.id) == ['a', 'b', 'c', 'd']
+    expected = [
+        # edge id, alpha-sorted node ids
+        (1, ('a', 'c')),
+        (2, ('b', 'c')),
+        (3, ('c', 'd')),
+    ]
+    actual = []
+    for edge in topo.edges.itertuples():
+        edge_id = edge.id
+        from_id = edge.from_id
+        to_id = edge.to_id
+        if from_id < to_id:
+            edge_tuple = (edge_id, (from_id, to_id))
+        else:
+            edge_tuple = (edge_id, (to_id, from_id))
+        actual.append(edge_tuple)
+
+    # sort by edge_id
+    actual = sorted(actual, key=lambda edge_tuple: edge_tuple[0])
+    assert actual == expected
