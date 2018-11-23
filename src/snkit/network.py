@@ -165,7 +165,7 @@ def split_edges_at_nodes(network):
     )
 
 
-def link_nodes_to_edges_within(network, distance):
+def link_nodes_to_edges_within(network, distance, condition=None):
     """Link nodes to all edges within some distance
     """
     new_node_geoms = []
@@ -174,6 +174,8 @@ def link_nodes_to_edges_within(network, distance):
         # for each node, find edges within
         edges = edges_within(node.geometry, network.edges, distance)
         for edge in edges.itertuples():
+            if condition is not None and not condition(node, edge):
+                continue
             # add nodes at points-nearest
             point = nearest_point_on_line(node.geometry, edge.geometry)
             if point != node.geometry:
