@@ -1,10 +1,10 @@
 """Test core objects/concepts
 """
+# pylint: disable=C0103
 from geopandas import GeoDataFrame
-from pandas import RangeIndex
 from pandas.testing import assert_frame_equal
 from pytest import fixture
-from shapely.geometry import Point, LineString
+from shapely.geometry import Point, LineString, MultiPoint
 
 import snkit
 import snkit.network
@@ -29,9 +29,9 @@ def nodes_only():
 
         x
     """
-    point_a = Point((0, 0))
-    point_b = Point((0, 2))
-    nodes = GeoDataFrame([{'geometry': point_a}, {'geometry': point_b}])
+    a = Point((0, 0))
+    b = Point((0, 2))
+    nodes = GeoDataFrame([{'geometry': a}, {'geometry': b}])
     return snkit.Network(nodes=nodes)
 
 
@@ -42,11 +42,11 @@ def connected():
         |
         a
     """
-    edge = LineString([(0, 0), (0, 2)])
-    point_a = Point((0, 0))
-    point_b = Point((0, 2))
+    a = Point((0, 0))
+    b = Point((0, 2))
+    edge = LineString([a, b])
     edges = GeoDataFrame([{'geometry': edge}])
-    nodes = GeoDataFrame([{'geometry': point_a}, {'geometry': point_b}])
+    nodes = GeoDataFrame([{'geometry': a}, {'geometry': b}])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -58,10 +58,10 @@ def misaligned():
         | a
     """
     edge = LineString([(0, 0), (0, 2)])
-    point_a = Point((0.5, 0))
-    point_b = Point((-0.5, 2))
+    a = Point((0.5, 0))
+    b = Point((-0.5, 2))
     edges = GeoDataFrame([{'geometry': edge}])
-    nodes = GeoDataFrame([{'geometry': point_a}, {'geometry': point_b}])
+    nodes = GeoDataFrame([{'geometry': a}, {'geometry': b}])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -74,14 +74,14 @@ def unsplit():
       |
       a
     """
-    edge_ab = LineString([(0, 0), (0, 2)])
-    edge_cd = LineString([(0, 1), (1, 1)])
-    point_a = Point((0, 0))
-    point_b = Point((0, 2))
-    point_c = Point((0, 1))
-    point_d = Point((1, 1))
-    edges = GeoDataFrame([edge_ab, edge_cd], columns=['geometry'])
-    nodes = GeoDataFrame([point_a, point_b, point_c, point_d], columns=['geometry'])
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((0, 1))
+    d = Point((1, 1))
+    ab = LineString([a, b])
+    cd = LineString([c, d])
+    edges = GeoDataFrame([ab, cd], columns=['geometry'])
+    nodes = GeoDataFrame([a, b, c, d], columns=['geometry'])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
