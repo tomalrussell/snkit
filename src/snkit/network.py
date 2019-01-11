@@ -87,7 +87,7 @@ def add_topology(network, id_col='id'):
     )
 
 
-def get_endpoints(network, process=None):
+def get_endpoints(network):
     """Get nodes for each edge endpoint
     """
     endpoints = []
@@ -131,6 +131,11 @@ def round_geometries(network, precision=3):
 
 
 def split_multilinestrings(network):
+    """Create multiple edges from any MultiLineString edge
+
+    Ensures that edge geometries are all LineStrings, duplicates attributes over any
+    created multi-edges.
+    """
     simple_edge_attrs = []
     simple_edge_geoms = []
     edges = network.edges
@@ -329,11 +334,11 @@ def nearest(geom, gdf):
     """Find the element of a GeoDataFrame nearest a shapely geometry
     """
     matches_idx = gdf.sindex.nearest(geom.bounds)
-    nearest = min(
+    nearest_geom = min(
         [gdf.iloc[match_idx] for match_idx in matches_idx],
         key=lambda match: geom.distance(match.geometry)
     )
-    return nearest
+    return nearest_geom
 
 
 def edges_within(point, edges, distance):
@@ -448,7 +453,6 @@ def nearest_vertex_idx_on_line(point, line):
         key=lambda item: item[1]
     )
     return nearest_idx
-
 
 
 def nearest_point_on_line(point, line):
