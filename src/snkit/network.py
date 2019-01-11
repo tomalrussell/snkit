@@ -347,13 +347,13 @@ def edges_within(point, edges, distance):
     return d_within(point, edges, distance)
 
 
-def nodes_intersecting(line, nodes, tolerance=1e-3):
+def nodes_intersecting(line, nodes, tolerance=1e-9):
     """Find nodes intersecting line
     """
     return intersects(line, nodes, tolerance)
 
 
-def intersects(geom, gdf, tolerance=1e-3):
+def intersects(geom, gdf, tolerance=1e-9):
     """Find the subset of a GeoDataFrame intersecting with a shapely geometry
     """
     return _intersects(geom, gdf, tolerance)
@@ -365,7 +365,7 @@ def d_within(geom, gdf, distance):
     return _intersects(geom, gdf, distance)
 
 
-def _intersects(geom, gdf, tolerance=1e-3):
+def _intersects(geom, gdf, tolerance=1e-9):
     buf = geom.buffer(tolerance)
     if buf.is_empty:
         # can have an empty buffer with too small a tolerance, fallback to original geom
@@ -383,7 +383,7 @@ def line_endpoints(line):
     return start, end
 
 
-def split_edge_at_points(edge, points, tolerance=1e-3):
+def split_edge_at_points(edge, points, tolerance=1e-9):
     """Split edge at point/multipoint
     """
     segments = split_line(edge.geometry, points, tolerance)
@@ -392,14 +392,14 @@ def split_edge_at_points(edge, points, tolerance=1e-3):
     return edges
 
 
-def split_line(line, points, tolerance=1e-3):
+def split_line(line, points, tolerance=1e-9):
     """Split line at point or multipoint, within some tolerance
     """
     to_split = snap_line(line, points, tolerance)
     return list(split(to_split, points))
 
 
-def snap_line(line, points, tolerance=1e-3):
+def snap_line(line, points, tolerance=1e-9):
     """Snap a line to points within tolerance, inserting vertices as necessary
     """
     if points.geom_type == 'Point':
