@@ -9,12 +9,20 @@ from setuptools import find_packages
 from setuptools import setup
 
 
+def readme():
+    """Read README contents
+    """
+    with open('README.md') as f:
+        return f.read()
+
+
 setup(
     name='snkit',
     version='0.1.2',
     license='MIT License',
     description='a spatial networks toolkit',
-    long_description='',
+    long_description=readme(),
+    long_description_content_type="text/markdown",
     author='Tom Russell',
     author_email='tomalrussell@gmail.com',
     url='https://github.com/tomalrussell/snkit',
