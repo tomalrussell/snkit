@@ -13,7 +13,7 @@ setup(
     name='snkit',
     version='0.1.0',
     license='MIT License',
-    description='',
+    description='a spatial networks toolkit',
     long_description='',
     author='Tom Russell',
     author_email='tomalrussell@gmail.com',
