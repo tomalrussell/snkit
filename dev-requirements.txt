@@ -5,6 +5,7 @@ geopandas==0.4.0
 rtree>=0.8
 
 # test/lint
+attrs>=17.4  # to fix pytest compatibility on python 3.6
 pylint
 pytest>=3.6
 pytest-cov
