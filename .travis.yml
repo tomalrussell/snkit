@@ -14,3 +14,12 @@ install:
 
 script:
   - python -m pytest tests
+
+deploy:
+  provider: pypi
+  user: tomalrussell
+  password:
+    secure: JJGXGT6O+3oLY2L4LBGZB2UZAn/WN8cV9wEhwpobjZ2wOlRKrnjh1Dyn652nDlNzdDFJErN+/MagyioY97y+dAgg6KYOeDQI/RSE7GnAzs8DkJXBmmRY5NoLLZUEoBZ9ry6MJQRwZ0gFFAfdC/GNZ1hlm3IpgWwgsi9KfbDH8UlprFtA2oGxbnXkL+RIeFW1ySsy2EHqvwiNIozoMEtDhYrdcKsME6gqOqXxcxqgqpIhIpWOMNLV7HcInLGCipDu0k3g9trffNjjEW1Yqs4IzAvskK3EFrFqlzmXXup+Z+TJ4oQxP5EDQ701fotEpouXGAGN7AgoE+xSuj5kTS7aTW/QU9l4uayqZ80rv/ypEQm33tigoC0V+nIoxGM4ZGTic1ii/IDX6LRTSyf3LF8dSWjp5grXT9ztMP0ZLO2S7ZVmhQ0/XyHkfazSkBfuEhZ2MR3XFxoWp7kRCp0yO6++DFwLcR6rKilD1NXScBwPuZjb8EE5wtPRc+6A5IM9uJ0YMyFVxDNM4mL+3BofR3gZE6Nh5hLi3zU9H5Pxyc/ag1zYFYmGHFYt68w2cSc8V/UZFCYz0OA2FIMzodgIlMoLrEn0tlCg96eW/+5ALCMsjaUTyO+jjOt/vKBUSM4O4ZdythpWbkb4hhU4f6HJxNRXTa5YY5cb0vzMXRjLByw3kB4=
+  on:
+    tags: true
+  skip_existing: true
