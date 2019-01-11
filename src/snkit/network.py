@@ -130,6 +130,32 @@ def round_geometries(network, precision=3):
     return network
 
 
+def split_multilinestrings(network):
+    simple_edge_attrs = []
+    simple_edge_geoms = []
+    edges = network.edges
+    for edge in tqdm(edges.itertuples(index=False), desc="split_multi", total=len(edges)):
+        if edge.geometry.geom_type == 'MultiLineString':
+            edge_parts = list(edge.geometry)
+        else:
+            edge_parts = [edge.geometry]
+
+        for part in edge_parts:
+            simple_edge_geoms.append(part)
+
+        attrs = GeoDataFrame([edge] * len(edge_parts))
+        simple_edge_attrs.append(attrs)
+
+    simple_edge_geoms = GeoDataFrame(simple_edge_geoms, columns=['geometry'])
+    edges = pandas.concat(simple_edge_attrs, axis=0).reset_index(drop=True).drop('geometry', axis=1)
+    edges = pandas.concat([edges, simple_edge_geoms], axis=1)
+
+    return Network(
+        nodes=network.nodes,
+        edges=edges
+    )
+
+
 def snap_nodes(network, threshold=None):
     """Move nodes (within threshold) to edges
     """
