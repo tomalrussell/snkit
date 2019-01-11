@@ -235,6 +235,38 @@ def link_nodes_to_edges_within(network, distance, condition=None):
     return split_edges_at_nodes(unsplit)
 
 
+def link_nodes_to_nearest_edge(network, condition=None):
+    """Link nodes to all edges within some distance
+    """
+    new_node_geoms = []
+    new_edge_geoms = []
+    for node in tqdm(network.nodes.itertuples(index=False), desc="link", total=len(network.nodes)):
+        # for each node, find edges within
+        edge = nearest_edge(node.geometry, network.edges)
+        if condition is not None and not condition(node, edge):
+            continue
+        # add nodes at points-nearest
+        point = nearest_point_on_line(node.geometry, edge.geometry)
+        if point != node.geometry:
+            new_node_geoms.append(point)
+            # add edges linking
+            line = LineString([node.geometry, point])
+            new_edge_geoms.append(line)
+
+    new_nodes = matching_gdf_from_geoms(network.nodes, new_node_geoms)
+    all_nodes = concat_dedup([network.nodes, new_nodes])
+
+    new_edges = matching_gdf_from_geoms(network.edges, new_edge_geoms)
+    all_edges = concat_dedup([network.edges, new_edges])
+
+    # split edges as necessary after new node creation
+    unsplit = Network(
+        nodes=all_nodes,
+        edges=all_edges
+    )
+    return split_edges_at_nodes(unsplit)
+
+
 def geometry_column_name(gdf):
     """Get geometry column name, fall back to 'geometry'
     """
