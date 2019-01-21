@@ -6,8 +6,11 @@ import numpy as np
 import pandas
 
 from geopandas import GeoDataFrame
-from shapely.geometry import Point, MultiPoint, LineString, shape, mapping
-from shapely.ops import split
+from shapely.geometry import Point, MultiPoint, LineString, GeometryCollection, shape, mapping
+from shapely.ops import split,linemerge
+
+from centerline.main import Centerline
+
 
 # optional progress bars
 if 'SNKIT_PROGRESS' in os.environ and os.environ['SNKIT_PROGRESS'] in ('1', 'TRUE'):
@@ -180,6 +183,22 @@ def split_multilinestrings(network):
         edges=edges
     )
 
+def merge_multilinestring(geom):
+    """ Merge a MultiLineString to LineString
+    """
+    try:
+        if geom.geom_type == 'MultiLineString':
+            geom_inb = linemerge(geom)
+            if geom_inb.is_ring:
+                return geom
+            if geom_inb.geom_type == 'MultiLineString':
+                return linemerge(Centerline(geom.buffer(0.5)))
+            else:
+                return geom_inb
+        else:
+            return geom
+    except:
+        return GeometryCollection()
 
 def snap_nodes(network, threshold=None):
     """Move nodes (within threshold) to edges
@@ -291,6 +310,65 @@ def link_nodes_to_nearest_edge(network, condition=None):
     )
     return split_edges_at_nodes(unsplit)
 
+def merge_edges(network):
+    """ Merge edges that share a node with a connectivity degree of 2
+    """
+    if 'degree' not in network.nodes.columns:
+        network.nodes['degree'] = network.nodes.id.apply(lambda x: 
+                                                 node_connectivity_degree(x,network))
+       
+    degree2 = list(network.nodes.id.loc[network.nodes.degree == 2])
+    d2_set = set(degree2)
+    node_paths = []
+    edge_paths = []
+
+    while d2_set:
+        popped_node = d2_set.pop()
+        node_path = [popped_node]
+        candidates = set([popped_node])
+        while candidates:
+            popped_cand = candidates.pop()
+            matches = list(np.unique(network.edges[['from_id','to_id']].loc[(
+                    (network.edges.from_id.isin([popped_cand])) | 
+                    (network.edges.to_id.isin([popped_cand])))].values))
+            matches.remove(popped_cand)
+            for match in matches:
+                if match in node_path:
+                    continue
+
+                if match in degree2:
+                    candidates.add(match)
+                    node_path.append(match)
+                    d2_set.remove(match)
+                else:
+                    node_path.append(match)
+        if len(node_path) > 2:
+            node_paths.append(node_path)
+            edge_paths.append(network.edges.loc[(
+                    (network.edges.from_id.isin(node_path)) & 
+                    (network.edges.to_id.isin(node_path)))])
+
+    concat_edge_paths = []
+    unique_edge_ids = set()
+    for edge_path in edge_paths:
+        unique_edge_ids.update(list(edge_path.id))
+        if edge_path.bridge.isnull().any():
+            edge_path = edge_path.copy()
+            edge_path['bridge'] = 'yes'
+        concat_edge_paths.append(edge_path.dissolve(by=['infra_type'], aggfunc='first'))         
+
+    edges_new = network.edges.copy()
+    edges_new = edges_new.loc[~(edges_new.id.isin(list(unique_edge_ids)))]
+    edges_new.geometry = edges_new.geometry.apply(merge_multilinestring)
+    network.edges = pandas.concat([edges_new,pandas.concat(concat_edge_paths).reset_index()],sort=False)
+    
+    nodes_new = network.nodes.copy()
+    network.nodes = nodes_new.loc[~(nodes_new.id.isin(list(degree2)))]
+    
+    return Network(
+        nodes=network.nodes,
+        edges=network.edges
+    )
 
 def geometry_column_name(gdf):
     """Get geometry column name, fall back to 'geometry'
@@ -319,6 +397,12 @@ def concat_dedup(dfs):
     cat_dedup.reset_index(drop=True, inplace=True)
     return cat_dedup
 
+def node_connectivity_degree(node,network):
+    return len(
+            network.edges[
+                (network.edges.from_id == node) | (network.edges.to_id == node)
+            ]
+    ) 
 
 def drop_duplicate_geometries(gdf, keep='first'):
     """Drop duplicate geometries from a dataframe
