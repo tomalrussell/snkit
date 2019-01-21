@@ -45,9 +45,14 @@ class Network():
         self.edges = edges
 
 
-def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node'):
+def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node',update=False):
     """Add an id column with ascending ids
     """
+    
+    if update:
+        network.nodes.drop('id',axis='columns',inplace=True)
+        network.edges.drop('id',axis='columns',inplace=True)
+    
     node_ids = pandas.DataFrame(
         ['{}_{}'.format(node_prefix, i) for i in range(len(network.nodes))],
         columns=[id_col]
@@ -62,9 +67,14 @@ def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node'):
     )
 
 
-def add_topology(network, id_col='id'):
+def add_topology(network, id_col='id',update=False):
     """Add from_id, to_id to edges
     """
+    
+    if update:
+        network.edges.drop(['to_id','from_id'],axis='columns',inplace=True)
+
+    
     from_ids = []
     to_ids = []
     for edge in tqdm(network.edges.itertuples(), desc="topology", total=len(network.edges)):
@@ -86,6 +96,16 @@ def add_topology(network, id_col='id'):
         edges=pandas.concat([network.edges, ids], axis=1)
     )
 
+def add_crs(network,crs_code='4326'):
+    """ Add a coordinate system to the Network. By default EPSG:4326 will be used.
+    """
+    network.edges.crs = {'init' :'epsg:{}'.format(crs_code)}
+    network.nodes.crs = {'init' :'epsg:{}'.format(crs_code)}
+    
+    return Network(
+        nodes=network.nodes,
+        edges=network.edges
+    )
 
 def get_endpoints(network):
     """Get nodes for each edge endpoint
