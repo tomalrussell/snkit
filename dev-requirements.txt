@@ -3,6 +3,7 @@ fiona>=1.7.13
 shapely>=1.6
 geopandas==0.4.0
 rtree>=0.8
+centerline>=0.5
 
 # test/lint
 attrs>=17.4  # to fix pytest compatibility on python 3.6
