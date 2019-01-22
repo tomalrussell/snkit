@@ -9,9 +9,6 @@ from geopandas import GeoDataFrame
 from shapely.geometry import Point, MultiPoint, LineString, GeometryCollection, shape, mapping
 from shapely.ops import split,linemerge
 
-from centerline.main import Centerline
-
-
 # optional progress bars
 if 'SNKIT_PROGRESS' in os.environ and os.environ['SNKIT_PROGRESS'] in ('1', 'TRUE'):
     try:
@@ -191,8 +188,10 @@ def merge_multilinestring(geom):
             geom_inb = linemerge(geom)
             if geom_inb.is_ring:
                 return geom
-            if geom_inb.geom_type == 'MultiLineString':
-                return linemerge(Centerline(geom.buffer(0.5)))
+# In case of linestring merge issues, we could add this to the script again            
+#            from centerline.main import Centerline
+#            if geom_inb.geom_type == 'MultiLineString':
+#                return linemerge(Centerline(geom.buffer(0.5)))
             else:
                 return geom_inb
         else:
