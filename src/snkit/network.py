@@ -473,6 +473,9 @@ def _intersects(geom, gdf, tolerance=1e-9):
     if buf.is_empty:
         # can have an empty buffer with too small a tolerance, fallback to original geom
         buf = geom
+    if not buf.is_valid:
+        # can exceptionally buffer to an invalid geometry, so try re-buffering
+        buf = buf.buffer(0)
     candidate_idxs = list(gdf.sindex.intersection(buf.bounds))
     candidates = gdf.iloc[candidate_idxs]
     return candidates[candidates.intersects(buf)]
