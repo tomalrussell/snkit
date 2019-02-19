@@ -6,3 +6,5 @@
 *.pyc
 build
 dist
+
+docs/source/api/*
