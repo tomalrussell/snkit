@@ -4,10 +4,11 @@ import os
 
 import numpy as np
 import pandas
+import shapely.errors
 
 from geopandas import GeoDataFrame
 from shapely.geometry import Point, MultiPoint, LineString, GeometryCollection, shape, mapping
-from shapely.ops import split,linemerge
+from shapely.ops import split, linemerge
 
 # optional progress bars
 if 'SNKIT_PROGRESS' in os.environ and os.environ['SNKIT_PROGRESS'] in ('1', 'TRUE'):
@@ -252,16 +253,16 @@ def snap_nodes(network, threshold=None):
     )
 
 
-def split_edges_at_nodes(network):
+def split_edges_at_nodes(network, tolerance=1e-9):
     """Split network edges where they intersect node geometries
     """
     split_edges = []
     for edge in tqdm(network.edges.itertuples(index=False), desc="split", total=len(network.edges)):
-        hits = nodes_intersecting(edge.geometry, network.nodes)
+        hits = nodes_intersecting(edge.geometry, network.nodes, tolerance)
         split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
 
         # potentially split to multiple edges
-        edges = split_edge_at_points(edge, split_points)
+        edges = split_edge_at_points(edge, split_points, tolerance)
         split_edges.append(edges)
 
     # combine dfs
@@ -275,7 +276,7 @@ def split_edges_at_nodes(network):
     )
 
 
-def link_nodes_to_edges_within(network, distance, condition=None):
+def link_nodes_to_edges_within(network, distance, condition=None, tolerance=1e-9):
     """Link nodes to all edges within some distance
     """
     new_node_geoms = []
@@ -305,7 +306,7 @@ def link_nodes_to_edges_within(network, distance, condition=None):
         nodes=all_nodes,
         edges=all_edges
     )
-    return split_edges_at_nodes(unsplit)
+    return split_edges_at_nodes(unsplit, tolerance)
 
 
 def link_nodes_to_nearest_edge(network, condition=None):
@@ -343,9 +344,9 @@ def merge_edges(network):
     """ Merge edges that share a node with a connectivity degree of 2
     """
     if 'degree' not in network.nodes.columns:
-        network.nodes['degree'] = network.nodes.id.apply(lambda x: 
+        network.nodes['degree'] = network.nodes.id.apply(lambda x:
                                                  node_connectivity_degree(x,network))
-       
+
     degree2 = list(network.nodes.id.loc[network.nodes.degree == 2])
     d2_set = set(degree2)
     node_paths = []
@@ -358,7 +359,7 @@ def merge_edges(network):
         while candidates:
             popped_cand = candidates.pop()
             matches = list(np.unique(network.edges[['from_id','to_id']].loc[(
-                    (network.edges.from_id.isin([popped_cand])) | 
+                    (network.edges.from_id.isin([popped_cand])) |
                     (network.edges.to_id.isin([popped_cand])))].values))
             matches.remove(popped_cand)
             for match in matches:
@@ -374,7 +375,7 @@ def merge_edges(network):
         if len(node_path) > 2:
             node_paths.append(node_path)
             edge_paths.append(network.edges.loc[(
-                    (network.edges.from_id.isin(node_path)) & 
+                    (network.edges.from_id.isin(node_path)) &
                     (network.edges.to_id.isin(node_path)))])
 
     concat_edge_paths = []
@@ -384,16 +385,16 @@ def merge_edges(network):
         if edge_path.bridge.isnull().any():
             edge_path = edge_path.copy()
             edge_path['bridge'] = 'yes'
-        concat_edge_paths.append(edge_path.dissolve(by=['infra_type'], aggfunc='first'))         
+        concat_edge_paths.append(edge_path.dissolve(by=['infra_type'], aggfunc='first'))
 
     edges_new = network.edges.copy()
     edges_new = edges_new.loc[~(edges_new.id.isin(list(unique_edge_ids)))]
     edges_new.geometry = edges_new.geometry.apply(merge_multilinestring)
     network.edges = pandas.concat([edges_new,pandas.concat(concat_edge_paths).reset_index()],sort=False)
-    
+
     nodes_new = network.nodes.copy()
     network.nodes = nodes_new.loc[~(nodes_new.id.isin(list(degree2)))]
-    
+
     return Network(
         nodes=network.nodes,
         edges=network.edges
@@ -426,12 +427,12 @@ def concat_dedup(dfs):
     cat_dedup.reset_index(drop=True, inplace=True)
     return cat_dedup
 
-def node_connectivity_degree(node,network):
+def node_connectivity_degree(node, network):
     return len(
             network.edges[
                 (network.edges.from_id == node) | (network.edges.to_id == node)
             ]
-    ) 
+    )
 
 def drop_duplicate_geometries(gdf, keep='first'):
     """Drop duplicate geometries from a dataframe
@@ -503,12 +504,17 @@ def _intersects(geom, gdf, tolerance=1e-9):
     if buf.is_empty:
         # can have an empty buffer with too small a tolerance, fallback to original geom
         buf = geom
-    if not buf.is_valid:
+    try:
+        return _intersects_gdf(buf, gdf)
+    except shapely.errors.TopologicalError:
         # can exceptionally buffer to an invalid geometry, so try re-buffering
         buf = buf.buffer(0)
-    candidate_idxs = list(gdf.sindex.intersection(buf.bounds))
+        return _intersects_gdf(buf, gdf)
+
+def _intersects_gdf(geom, gdf):
+    candidate_idxs = list(gdf.sindex.intersection(geom.bounds))
     candidates = gdf.iloc[candidate_idxs]
-    return candidates[candidates.intersects(buf)]
+    return candidates[candidates.intersects(geom)]
 
 
 def line_endpoints(line):
@@ -522,7 +528,11 @@ def line_endpoints(line):
 def split_edge_at_points(edge, points, tolerance=1e-9):
     """Split edge at point/multipoint
     """
-    segments = split_line(edge.geometry, points, tolerance)
+    try:
+        segments = split_line(edge.geometry, points, tolerance)
+    except ValueError:
+        # if splitting fails, e.g. becuase points is empty GeometryCollection
+        segments = [edge.geometry]
     edges = GeoDataFrame([edge] * len(segments))
     edges.geometry = segments
     return edges
