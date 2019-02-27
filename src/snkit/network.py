@@ -22,8 +22,8 @@ else:
 class Network():
     """A Network is composed of nodes (points in space) and edges (lines)
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     nodes : geopandas.geodataframe.GeoDataFrame, optional
     edges : geopandas.geodataframe.GeoDataFrame, optional
 
@@ -44,15 +44,55 @@ class Network():
             edges = GeoDataFrame()
         self.edges = edges
 
+    def set_crs(self, crs=None, epsg=None):
+        """Set network (node and edge) crs
+
+        Parameters
+        ----------
+        crs : dict or str
+            Projection parameters as PROJ4 string or in dictionary form.
+        epsg : int
+            EPSG code specifying output projection
+
+        """
+        if crs is None and epsg is None:
+            raise ValueError("Either crs or epsg must be provided to Network.set_crs")
+
+        if epsg is not None:
+            crs = {'init': 'epsg:{}'.format(epsg)}
+
+        self.edges.crs = crs
+        self.nodes.crs = crs
+
+    def to_crs(self, crs=None, epsg=None):
+        """Set network (node and edge) crs
+
+        Parameters
+        ----------
+        crs : dict or str
+            Projection parameters as PROJ4 string or in dictionary form.
+        epsg : int
+            EPSG code specifying output projection
+
+        """
+        if crs is None and epsg is None:
+            raise ValueError("Either crs or epsg must be provided to Network.set_crs")
+
+        if epsg is not None:
+            crs = {'init': 'epsg:{}'.format(epsg)}
+
+        self.edges.to_crs(crs, inplace=True)
+        self.nodes.to_crs(crs, inplace=True)
+
 
 def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node',update=False):
     """Add an id column with ascending ids
     """
-    
+
     if update:
         network.nodes.drop('id',axis='columns',inplace=True)
         network.edges.drop('id',axis='columns',inplace=True)
-    
+
     node_ids = pandas.DataFrame(
         ['{}_{}'.format(node_prefix, i) for i in range(len(network.nodes))],
         columns=[id_col]
@@ -70,11 +110,11 @@ def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node',update=
 def add_topology(network, id_col='id',update=False):
     """Add from_id, to_id to edges
     """
-    
+
     if update:
         network.edges.drop(['to_id','from_id'],axis='columns',inplace=True)
 
-    
+
     from_ids = []
     to_ids = []
     for edge in tqdm(network.edges.itertuples(), desc="topology", total=len(network.edges)):
@@ -96,16 +136,6 @@ def add_topology(network, id_col='id',update=False):
         edges=pandas.concat([network.edges, ids], axis=1)
     )
 
-def add_crs(network,crs_code='4326'):
-    """ Add a coordinate system to the Network. By default EPSG:4326 will be used.
-    """
-    network.edges.crs = {'init' :'epsg:{}'.format(crs_code)}
-    network.nodes.crs = {'init' :'epsg:{}'.format(crs_code)}
-    
-    return Network(
-        nodes=network.nodes,
-        edges=network.edges
-    )
 
 def get_endpoints(network):
     """Get nodes for each edge endpoint
@@ -188,7 +218,7 @@ def merge_multilinestring(geom):
             geom_inb = linemerge(geom)
             if geom_inb.is_ring:
                 return geom
-# In case of linestring merge issues, we could add this to the script again            
+# In case of linestring merge issues, we could add this to the script again
 #            from centerline.main import Centerline
 #            if geom_inb.geom_type == 'MultiLineString':
 #                return linemerge(Centerline(geom.buffer(0.5)))
