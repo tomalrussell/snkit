@@ -4,7 +4,16 @@
 # python
 *.egg-info
 *.pyc
+.ipynb_checkpoints
+.pytest_cache
 build
 dist
 
 docs/source/api/*
+
+# data
+*.shp
+*.prj
+*.dbf
+*.shx
+*.cpg
