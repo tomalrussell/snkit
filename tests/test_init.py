@@ -293,6 +293,7 @@ def test_link_nodes_to_edges_within(gap, bridged):
     assert_frame_equal(actual.nodes, bridged.nodes)
     assert_frame_equal(actual.edges, bridged.edges)
 
+
 def test_assign_topology(split_with_ids):
     """Given network
       b
@@ -323,3 +324,25 @@ def test_assign_topology(split_with_ids):
     # sort by edge_id
     actual = sorted(actual, key=lambda edge_tuple: edge_tuple[0])
     assert actual == expected
+
+
+def test_passing_slice():
+    """Passing a partial dataframe through add_ids should work fine, resetting index
+    """
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((0, 1))
+    d = Point((1, 1))
+    ac = LineString([a, c])
+    cb = LineString([c, b])
+    cd = LineString([c, d])
+    edges = GeoDataFrame([ac, cb, cd], columns=['geometry'])
+    network = snkit.Network(edges=edges[1:])
+    with_endpoints = snkit.network.add_endpoints(network)
+    with_ids = snkit.network.add_ids(with_endpoints)
+
+    actual = with_ids.edges
+    expected = GeoDataFrame([(cb, 'edge_0'), (cd, 'edge_1')], columns=['geometry', 'id'])
+
+    print(actual)
+    assert_frame_equal(actual, expected)

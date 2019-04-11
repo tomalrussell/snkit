@@ -86,25 +86,23 @@ class Network():
         self.nodes.to_crs(crs, inplace=True)
 
 
-def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node',update=False):
-    """Add an id column with ascending ids
+def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node'):
+    """Add or replace an id column with ascending ids
     """
+    nodes = network.nodes.copy()
+    if not nodes.empty:
+        nodes = nodes.reset_index(drop=True)
 
-    if update:
-        network.nodes.drop('id',axis='columns',inplace=True)
-        network.edges.drop('id',axis='columns',inplace=True)
+    edges = network.edges.copy()
+    if not edges.empty:
+        edges = edges.reset_index(drop=True)
 
-    node_ids = pandas.DataFrame(
-        ['{}_{}'.format(node_prefix, i) for i in range(len(network.nodes))],
-        columns=[id_col]
-    )
-    edge_ids = pandas.DataFrame(
-        ['{}_{}'.format(edge_prefix, i) for i in range(len(network.edges))],
-        columns=[id_col]
-    )
+    nodes[id_col] = ['{}_{}'.format(node_prefix, i) for i in range(len(nodes))]
+    edges[id_col] = ['{}_{}'.format(edge_prefix, i) for i in range(len(edges))]
+
     return Network(
-        nodes=pandas.concat([network.nodes, node_ids], axis=1),
-        edges=pandas.concat([network.edges, edge_ids], axis=1)
+        nodes=nodes,
+        edges=edges
     )
 
 
