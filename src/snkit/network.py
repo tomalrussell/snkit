@@ -106,16 +106,12 @@ def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node'):
     )
 
 
-def add_topology(network, id_col='id',update=False):
+def add_topology(network, id_col='id'):
     """Add from_id, to_id to edges
     """
-
-    if update:
-        network.edges.drop(['to_id','from_id'],axis='columns',inplace=True)
-
-
     from_ids = []
     to_ids = []
+
     for edge in tqdm(network.edges.itertuples(), desc="topology", total=len(network.edges)):
         start, end = line_endpoints(edge.geometry)
 
@@ -125,14 +121,13 @@ def add_topology(network, id_col='id',update=False):
         end_node = nearest_node(end, network.nodes)
         to_ids.append(end_node[id_col])
 
-    ids = pandas.DataFrame(data={
-        'from_id': from_ids,
-        'to_id': to_ids
-    })
+    edges = network.edges.copy()
+    edges['from_id'] = from_ids
+    edges['to_id'] = to_ids
 
     return Network(
         nodes=network.nodes,
-        edges=pandas.concat([network.edges, ids], axis=1)
+        edges=edges
     )
 
 
