@@ -107,7 +107,7 @@ def add_ids(network, id_col='id', edge_prefix='edge', node_prefix='node'):
 
 
 def add_topology(network, id_col='id'):
-    """Add from_id, to_id to edges
+    """Add or replace from_id, to_id to edges
     """
     from_ids = []
     to_ids = []
