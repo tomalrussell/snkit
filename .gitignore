@@ -2,6 +2,7 @@
 .vscode
 
 # python
+.eggs
 *.egg-info
 *.pyc
 .ipynb_checkpoints
