@@ -76,6 +76,13 @@ notebook](https://github.com/tomalrussell/snkit/blob/master/notebooks/snkit-demo
 small demonstration.
 
 
+## Testimonials 💯 👍 😊
+
+> With five lines of snkit I replaced four or five hundred lines of custom code!
+
+A. Contented Customer (@czor847)
+
+
 ## Acknowledgements
 
 ```
