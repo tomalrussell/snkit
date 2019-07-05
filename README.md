@@ -83,6 +83,15 @@ small demonstration.
 A. Contented Customer (@czor847)
 
 
+## Related projects
+
+- [`pysal/spaghetti`](https://pysal-spaghetti.readthedocs.io/en/latest/index.html) has methods
+  for building graph-theoretic networks and the analysis of network events.
+- [`osmnx`](https://osmnx.readthedocs.io/en/stable/) lets you retrieve, model, analyze, and
+  visualize street networks from OpenStreetMap, including methods to correct and simplify
+  network topology.
+
+
 ## Acknowledgements
 
 ```
