@@ -30,15 +30,13 @@ class Mock(MagicMock):
 
 
 mock_modules = [
-    'fiona',
+    'geopandas',
     'numpy',
     'pandas',
-    'rtree',
     'shapely',
+    'shapely.errors',
     'shapely.geometry',
-    'shapely.ops',
-    'shapely.validation',
-    'geopandas'
+    'shapely.ops'
 ]
 sys.modules.update((mod_name, Mock()) for mod_name in mock_modules)
 

@@ -65,7 +65,7 @@ Install system libraries (only tested on Ubuntu):
 
 Or use [conda](https://docs.conda.io/en/latest/miniconda.html) to install major dependencies:
 
-    conda install pandas geopandas shapely rtree fiona
+    conda install geopandas shapely
 
 Install or upgrade `snkit` using pip:
 
