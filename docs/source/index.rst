@@ -23,7 +23,8 @@ a spatial networks toolkit
 
 
 /ˈsnɪkɪt/ – sounds like `[snicket] <https://en.oxforddictionaries.com/definition/snicket>`_
-(noun, Northern English) A narrow passage between houses; an alleyway.
+(noun, Northern English) A narrow passage between houses; an alleyway. Alternatively, a python
+package to help clean spatial networks data.
 
 .. toctree::
    :maxdepth: 2
@@ -55,3 +56,13 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+.. mdinclude:: ../../README.md
+   :start-line: 17
+   :end-line: 60
+
+
+.. mdinclude:: ../../README.md
+   :start-line: 78
+   :end-line: 107
