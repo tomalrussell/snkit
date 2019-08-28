@@ -26,6 +26,30 @@ a spatial networks toolkit
 (noun, Northern English) A narrow passage between houses; an alleyway. Alternatively, a python
 package to help clean spatial networks data.
 
+
+.. mdinclude:: ../../README.md
+   :start-line: 17
+   :end-line: 26
+
+.. image:: source/_static/unconnected-network.png
+   :alt: Unconnected network
+
+.. mdinclude:: ../../README.md
+   :start-line: 28
+   :end-line: 39
+
+.. image:: source/_static/connected-network.png
+   :alt: Connected network
+
+.. mdinclude:: ../../README.md
+   :start-line: 41
+   :end-line: 59
+
+.. mdinclude:: ../../README.md
+   :start-line: 78
+   :end-line: 107
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -56,13 +80,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
-.. mdinclude:: ../../README.md
-   :start-line: 17
-   :end-line: 60
-
-
-.. mdinclude:: ../../README.md
-   :start-line: 78
-   :end-line: 107
