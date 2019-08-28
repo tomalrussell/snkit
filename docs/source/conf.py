@@ -21,7 +21,6 @@ from sphinx.apidoc import main as run_apidoc
 __location__ = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.join(__location__, '..', '..', 'src'))
 
-
 # mock modules which we can avoid installing for docs-building
 class Mock(MagicMock):
     @classmethod
@@ -48,9 +47,17 @@ copyright = '2019, Tom Russell'
 author = 'Tom Russell'
 
 # The short X.Y version
-version = '0'
+version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.1.2'
+release = ''
+
+try:
+    from smif import __version__
+    version = __version__
+except ImportError:
+    pass
+else:
+    release = version
 
 # -- Generate API docs pages for autodoc
 output_dir = os.path.join(__location__, 'api')
