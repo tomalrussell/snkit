@@ -31,14 +31,14 @@ package to help clean spatial networks data.
    :start-line: 17
    :end-line: 26
 
-.. image:: source/_static/unconnected-network.png
+.. image:: _static/unconnected-network.png
    :alt: Unconnected network
 
 .. mdinclude:: ../../README.md
    :start-line: 28
    :end-line: 39
 
-.. image:: source/_static/connected-network.png
+.. image:: _static/connected-network.png
    :alt: Connected network
 
 .. mdinclude:: ../../README.md
