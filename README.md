@@ -2,6 +2,7 @@
 [![Build Status](https://travis-ci.com/tomalrussell/snkit.png?branch=master)](https://travis-ci.com/tomalrussell/snkit)
 [![License](https://img.shields.io/pypi/l/snkit.svg)](https://opensource.org/licenses/MIT)
 [![PyPI version](https://img.shields.io/pypi/v/snkit.svg)](https://pypi.org/project/snkit/)
+[![DOI](https://zenodo.org/badge/129739785.svg)](https://doi.org/10.5281/zenodo.3269518)
 <!--
 TODO: enable after publication
 [![Conda Forge version](https://anaconda.org/conda-forge/snkit/badges/version.svg)](https://anaconda.org/conda-forge/snkit)
