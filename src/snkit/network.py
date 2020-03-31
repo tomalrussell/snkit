@@ -465,9 +465,8 @@ def merge_2(network):
     else: deg = nod['degree'].to_numpy()
     #For the 0.002s speed up, alternatively do a straightforward loc[degree==2]
     degree2 = np.where(deg==2)
-    tempNod = list(nod['id'].iloc[degree2])
     #n2: is the set of all node IDs that are degree 2
-    n2 = set(tempNod)
+    n2 = set((nod['id'].iloc[degree2]))
     #TODO if you create a dictionary to mask values this geometry
     #array nodGeom can be made to only contain the 'geometry' of degree 2
     #nodes
@@ -477,13 +476,11 @@ def merge_2(network):
     while n2:        
         newEdge = []
         info_first_edge = []
-
         nodeID = n2.pop()
         deg[nodeID]= 0
         #Co-ordinates of current node
         node_geometry = nodGeom[nodeID]
-        a = edg.sindex.nearest(nodGeom[nodeID].bounds)
-        eID = set(a)
+        eID = set(edg.sindex.nearest(nodGeom[nodeID].bounds))
         #Find the nearest 2 edges, unless there is an error in the dataframe
         #this will return the connected edges using spatial indexing
         if len(eID) > 2: edgePath1, edgePath2 = find_closest_2_edges(eID,nodeID,edg,node_geometry)
@@ -502,8 +499,7 @@ def merge_2(network):
         while deg[nextNode1] == 2:
             deg[nextNode1] = 0
             n2.discard(nextNode1)
-            a = edg.sindex.nearest(nodGeom[nextNode1].bounds)
-            eID = set(a)
+            eID = set(edg.sindex.nearest(nodGeom[nextNode1].bounds))
             eID.discard(edgePath1.id)
             edgePath1 = min([edg.iloc[match_idx] for match_idx in eID],
             key=lambda match: nodGeom[nextNode1].distance(match.geometry))
@@ -514,8 +510,7 @@ def merge_2(network):
         while deg[nextNode2] == 2:
             deg[nextNode2] = 0
             n2.discard(nextNode2)
-            a = edg.sindex.nearest(nodGeom[nextNode2].bounds)
-            eID = set(a)
+            eID = set(edg.sindex.nearest(nodGeom[nextNode2].bounds))
             eID.discard(edgePath2.id)
             edgePath2 = min([edg.iloc[match_idx] for match_idx in eID],
             key=lambda match: nodGeom[nextNode2].distance(match.geometry))
@@ -536,13 +531,13 @@ def merge_2(network):
 
 #IReturns the 2 edges connected to the current node
 def find_closest_2_edges(edgeIDs, nodeID, edges, nodGeometry):
-    eID = edgeIDs
-    edgePath1 = min([edges.iloc[match_idx] for match_idx in eID],
+    edgePath1 = min([edges.iloc[match_idx] for match_idx in edgeIDs],
             key=lambda match: nodGeometry.distance(match.geometry))
-    eID.remove(edgePath1.id)
-    edgePath2 = min([edges.iloc[match_idx] for match_idx in eID],
+    edgeIDs.remove(edgePath1.id)
+    edgePath2 = min([edges.iloc[match_idx] for match_idx in edgeIDs],
             key=lambda match: nodGeometry.distance(match.geometry))
     return edgePath1, edgePath2
+
 
 def merge_edges(network):
     """ Merge edges that share a node with a connectivity degree of 2
