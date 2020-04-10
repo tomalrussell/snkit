@@ -476,7 +476,7 @@ def merge_2(network):
     nodGeom = nod['geometry']
     eIDtoRemove =[]
     c = 0
-    while n2:        
+    while n2:   
         newEdge = []
         info_first_edge = []
         nodeID = n2.pop()
@@ -488,7 +488,8 @@ def merge_2(network):
         #this will return the connected edges using spatial indexing
         if len(eID) > 2: edgePath1, edgePath2 = find_closest_2_edges(eID,nodeID,edg,node_geometry)
         elif len(eID) < 2: 
-            print("First set only contains ", len(eID), "edges") 
+            #print("First set only contains ", len(eID), "edges")#
+            continue
         else: 
             edgePath1 = edg.iloc[eID.pop()]
             edgePath2 = edg.iloc[eID.pop()] 
@@ -527,7 +528,7 @@ def merge_2(network):
         edg.at[info_first_edge,'geometry'] = new_merged_geom
         edg.at[info_first_edge,'from_id'] = nextNode1
         edg.at[info_first_edge,'to_id'] = nextNode2
-
+        
     edg = edg.loc[~(edg.id.isin(eIDtoRemove))].reset_index(drop=True)
     #We remove all degree 0 nodes, including those found in dropHanging
     n = nod.loc[nod.degree > 0].reset_index(drop=True)
