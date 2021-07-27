@@ -18,3 +18,4 @@ docs/source/api/*
 *.dbf
 *.shx
 *.cpg
+__init__.py
