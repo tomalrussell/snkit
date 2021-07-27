@@ -333,7 +333,7 @@ def link_nodes_to_nearest_edge(network, condition=None):
     )
     return split_edges_at_nodes(unsplit)
 
-def merge_edges(network):
+def merge_edges(network,**kwargs):
     """ Merge edges that share a node with a connectivity degree of 2
     """
     if 'degree' not in network.nodes.columns:
@@ -375,10 +375,7 @@ def merge_edges(network):
     unique_edge_ids = set()
     for edge_path in edge_paths:
         unique_edge_ids.update(list(edge_path.id))
-        if edge_path.bridge.isnull().any():
-            edge_path = edge_path.copy()
-            edge_path['bridge'] = 'yes'
-        concat_edge_paths.append(edge_path.dissolve(by=['infra_type'], aggfunc='first'))
+        concat_edge_paths.append(edge_path.dissolve(by=kwargs.get("by", None)))
 
     edges_new = network.edges.copy()
     edges_new = edges_new.loc[~(edges_new.id.isin(list(unique_edge_ids)))]
