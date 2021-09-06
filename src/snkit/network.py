@@ -5,6 +5,7 @@ import os
 import numpy as np
 import pandas
 import shapely.errors
+import networkx as nx
 
 from geopandas import GeoDataFrame
 from shapely.geometry import Point, MultiPoint, LineString, GeometryCollection, shape, mapping
@@ -603,3 +604,19 @@ def set_precision(geom, precision):
     geom_mapping = mapping(geom)
     geom_mapping['coordinates'] = np.round(np.array(geom_mapping['coordinates']), precision)
     return shape(geom_mapping)
+
+
+def to_networkx(network):
+    """Return a networkx graph
+    """
+    # init graph
+    G = nx.Graph()
+    # get nodes from network data
+    G.add_nodes_from(network.nodes.id.to_list())
+    # get edges from network data
+    edges_as_list = [(network.edges.loc[i].from_id, 
+                      network.edges.loc[i].to_id) 
+                      for i in network.edges.index]
+    # add edges to graph
+    G.add_weighted_edges_from(edges_as_list)
+    return G
