@@ -620,3 +620,4 @@ def to_networkx(network):
     # add edges to graph
     G.add_weighted_edges_from(edges_as_list)
     return G
+
