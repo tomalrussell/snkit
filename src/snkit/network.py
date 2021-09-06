@@ -621,3 +621,26 @@ def to_networkx(network):
     G.add_weighted_edges_from(edges_as_list)
     return G
 
+
+def connected_components(network,add_id=True,id_col='graph_id'):
+    ''' Get connected components within network and id to each individual graph
+    '''
+    # define as nx graph
+    G = to_networkx(network)
+    # get connected_components using nx
+    connected_parts = sorted(nx.connected_components(G), key = len, reverse=True)
+    # add unique id to each graph
+    if add_id is True:
+        count = 1
+        network.edges[id_col] = 0
+        for part in connected_parts:
+            network.edges.loc[ (network.edges.from_id.isin(list(part))) | \
+                               (network.edges.to_id.isin(list(part))), id_col ] = count
+            # adjust counter
+            count = count + 1
+        return Network(
+            nodes=network.nodes,
+            edges=network.edges
+        )
+    else:
+        return connected_parts
