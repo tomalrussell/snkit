@@ -5,7 +5,11 @@ import os
 import numpy as np
 import pandas
 import shapely.errors
-import networkx as nx
+try:
+    import networkx as nx
+    USE_NX = True
+except ImportError:
+    USE_NX = False
 
 from geopandas import GeoDataFrame
 from shapely.geometry import Point, MultiPoint, LineString, GeometryCollection, shape, mapping
