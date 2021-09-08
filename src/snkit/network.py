@@ -613,26 +613,34 @@ def set_precision(geom, precision):
 def to_networkx(network):
     """Return a networkx graph
     """
-    # init graph
-    G = nx.Graph()
-    # get nodes from network data
-    G.add_nodes_from(network.nodes.id.to_list())
-    # get edges from network data
-    edges_as_list = [(network.edges.loc[i].from_id, 
-                      network.edges.loc[i].to_id) 
-                      for i in network.edges.index]
-    # add edges to graph
-    G.add_weighted_edges_from(edges_as_list)
-    return G
+    if USE_NX is True:
+        # init graph
+        G = nx.Graph()
+        # get nodes from network data
+        G.add_nodes_from(network.nodes.id.to_list())
+        # get edges from network data
+        edges_as_list = list(zip(network.edges.from_id,network.edges.to_id))
+        # add edges to graph
+        G.add_weighted_edges_from(edges_as_list)
+        return G
+    else:
+        raise ImportError('No module named networkx')
+
+
+def get_connected_components(network):
+    if USE_NX is True:
+        G = to_networkx(network)
+        return sorted(nx.connected_components(G), key = len, reverse=True)
+    else:
+        raise ImportError('No module named networkx')
 
 
 def connected_components(network,add_id=True,id_col='graph_id'):
     ''' Get connected components within network and id to each individual graph
     '''
-    # define as nx graph
+    # get connected components
     G = to_networkx(network)
-    # get connected_components using nx
-    connected_parts = sorted(nx.connected_components(G), key = len, reverse=True)
+    connected_parts = get_connected_components(network)
     # add unique id to each graph
     if add_id is True:
         count = 1
