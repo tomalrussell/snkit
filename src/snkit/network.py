@@ -615,7 +615,7 @@ def to_networkx(network):
     """
     if USE_NX is True:
         # init graph
-        G = nx.Graph()
+        G = nx.MultiDiGraph()
         # get nodes from network data
         G.add_nodes_from(network.nodes.id.to_list())
         # get edges from network data
