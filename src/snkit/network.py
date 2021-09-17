@@ -654,3 +654,4 @@ def add_component_ids(network,id_col='component_id'):
     return Network(
         nodes=network.nodes,
         edges=network.edges
+        )

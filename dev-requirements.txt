@@ -10,3 +10,4 @@ attrs>=17.4  # to fix pytest compatibility on python 3.6
 pylint
 pytest>=4.6
 pytest-cov
+networkx>=1.9
