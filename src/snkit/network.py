@@ -613,7 +613,9 @@ def set_precision(geom, precision):
 def to_networkx(network):
     """Return a networkx graph
     """
-    if USE_NX is True:
+    if not USE_NX:
+        raise ImportError('No module named networkx')
+    else:
         # init graph
         G = nx.MultiDiGraph()
         # get nodes from network data
@@ -623,23 +625,22 @@ def to_networkx(network):
         # add edges to graph
         G.add_weighted_edges_from(edges_as_list)
         return G
-    else:
-        raise ImportError('No module named networkx')
 
 
 def get_connected_components(network):
-    ''' Get connected components within network and id to each individual graph
-    '''
-    if USE_NX is True:
+    """Get connected components within network and id to each individual graph
+    """
+    if not USE_NX:
+        raise ImportError('No module named networkx')
+    else:
         G = to_networkx(network)
         return sorted(nx.connected_components(G), key = len, reverse=True)
-    else:
-        raise ImportError('No module named networkx')
+
 
 
 def add_component_ids(network,id_col='component_id'):
-    ''' Add column of component IDs to network edge data
-    '''
+    """Add column of component IDs to network edge data
+    """
     # get connected components
     connected_parts = get_connected_components(network)
     # add unique id to each graph
