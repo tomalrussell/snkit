@@ -648,7 +648,4 @@ def add_component_ids(network,id_col='component_id'):
         network.edges.loc[ (network.edges.from_id.isin(list(part))) | \
                            (network.edges.to_id.isin(list(part))), id_col ] = count + 1
     # return
-    return Network(
-        nodes=network.nodes,
-        edges=network.edges
-        )
+    return network
