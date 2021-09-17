@@ -637,20 +637,16 @@ def get_connected_components(network):
         return sorted(nx.connected_components(G), key = len, reverse=True)
 
 
-
 def add_component_ids(network,id_col='component_id'):
     """Add column of component IDs to network edge data
     """
     # get connected components
     connected_parts = get_connected_components(network)
     # add unique id to each graph
-    count = 1
     network.edges[id_col] = 0 # init id_col
-    for part in connected_parts:
+    for count, part in enumerate(connected_parts):
         network.edges.loc[ (network.edges.from_id.isin(list(part))) | \
-                           (network.edges.to_id.isin(list(part))), id_col ] = count
-        # adjust counter
-        count = count + 1
+                           (network.edges.to_id.isin(list(part))), id_col ] = count + 1
     # return
     return Network(
         nodes=network.nodes,
