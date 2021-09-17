@@ -610,20 +610,23 @@ def set_precision(geom, precision):
     return shape(geom_mapping)
 
 
-def to_networkx(network):
+def to_networkx(network,directed=False):
     """Return a networkx graph
     """
     if not USE_NX:
         raise ImportError('No module named networkx')
     else:
         # init graph
-        G = nx.MultiDiGraph()
+        if not directed:
+            G = nx.Graph()
+        else:
+            G = nx.MultiDiGraph()
         # get nodes from network data
         G.add_nodes_from(network.nodes.id.to_list())
         # get edges from network data
         edges_as_list = list(zip(network.edges.from_id,network.edges.to_id))
         # add edges to graph
-        G.add_weighted_edges_from(edges_as_list)
+        G.add_edges_from(edges_as_list)
         return G
 
 
