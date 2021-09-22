@@ -354,6 +354,7 @@ def test_passing_slice():
     print(actual)
     assert_frame_equal(actual, expected)
 
+
 def test_to_networkx(connected):
     '''test to networkx
     '''
