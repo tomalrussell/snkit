@@ -610,7 +610,7 @@ def set_precision(geom, precision):
     return shape(geom_mapping)
 
 
-def to_networkx(network,directed=False):
+def to_networkx(network,directed=False,weight_col=None):
     """Return a networkx graph
     """
     if not USE_NX:
@@ -623,10 +623,19 @@ def to_networkx(network,directed=False):
             G = nx.MultiDiGraph()
         # get nodes from network data
         G.add_nodes_from(network.nodes.id.to_list())
+        # add nodal positions from geom
+        network.nodes['pos'] = list(zip(network.nodes.geometry.x, network.nodes.geometry.y))
+        pos = network.nodes.set_index('id').to_dict()['pos']
+        for n,p in pos.items():
+            G.nodes[n]['pos'] = p
         # get edges from network data
-        edges_as_list = list(zip(network.edges.from_id,network.edges.to_id))
+        if weight_col is None:
+            network.edges['weight'] = network.edges.geometry.length
+            edges_as_list = list(zip(network.edges.from_id,network.edges.to_id,network.edges.weight))
+        else:
+            edges_as_list = list(zip(network.edges.from_id,network.edges.to_id,network.edges[weight_col]))
         # add edges to graph
-        G.add_edges_from(edges_as_list)
+        G.add_weighted_edges_from(edges_as_list)
         return G
 
 

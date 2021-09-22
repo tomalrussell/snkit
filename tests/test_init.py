@@ -6,6 +6,13 @@ from pandas.testing import assert_frame_equal
 from pytest import fixture
 from shapely.geometry import Point, LineString, MultiPoint
 
+try:
+    import networkx as nx
+    from networkx.utils.misc import graphs_equal
+    USE_NX = True
+except ImportError:
+    USE_NX = False
+
 import snkit
 import snkit.network
 
@@ -346,3 +353,17 @@ def test_passing_slice():
 
     print(actual)
     assert_frame_equal(actual, expected)
+
+def test_to_networkx(connected):
+    '''test to networkx
+    '''
+    connected.nodes['id'] = ['n'+str(i) for i in connected.nodes.index]
+    connected = snkit.network.add_topology(connected)
+    G = snkit.network.to_networkx(connected)
+    
+    G_true = nx.Graph()
+    G_true.add_node('n0',pos=(0, 0))
+    G_true.add_node('n1',pos=(0, 2))
+    G_true.add_edge('n0', 'n1', weight=2)
+    
+    assert graphs_equal(G, G_true)
