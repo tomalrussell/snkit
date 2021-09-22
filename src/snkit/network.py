@@ -650,14 +650,18 @@ def get_connected_components(network):
 
 
 def add_component_ids(network,id_col='component_id'):
-    """Add column of component IDs to network edge data
+    """Add column of component IDs to network data
     """
     # get connected components
     connected_parts = get_connected_components(network)
     # add unique id to each graph
     network.edges[id_col] = 0 # init id_col
+    network.nodes[id_col] = 0 # init id_col
     for count, part in enumerate(connected_parts):
+        # edges
         network.edges.loc[ (network.edges.from_id.isin(list(part))) | \
                            (network.edges.to_id.isin(list(part))), id_col ] = count + 1
+        # nodes
+        network.nodes.loc[ (network.nodes.id.isin(list(part))), id_col] = count + 1 
     # return
     return network
