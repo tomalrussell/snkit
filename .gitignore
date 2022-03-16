@@ -2,6 +2,7 @@
 .vscode
 
 # python
+.coverage
 .eggs
 *.egg-info
 *.pyc

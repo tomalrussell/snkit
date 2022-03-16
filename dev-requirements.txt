@@ -1,9 +1,9 @@
 # requirements
-fiona>=1.8
-geopandas==0.10.2
-pandas==1.4.1
-shapely>=1.8
+geopandas>=0.10
+pygeos>=0.12
 
 # test/lint
+black
+nbstripout
 pytest
 pytest-cov

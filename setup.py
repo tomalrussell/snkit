@@ -33,7 +33,7 @@ setup(
     zip_safe=False,
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'Development Status :: 1 - Planning',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
@@ -49,11 +49,11 @@ setup(
     ],
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        'shapely>=1.6',
-        'geopandas>=0.4.0',
-        'rtree>=0.8'
+        'geopandas>=0.10',
+        'pygeos>=0.12'
     ],
-    extras_require={
+    extras_require=
+        'dev': ['black', 'nbstripout', 'pytest', 'pytest-cov'],{
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
