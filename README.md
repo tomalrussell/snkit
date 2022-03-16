@@ -1,9 +1,9 @@
 [![Documentation Status](https://readthedocs.org/projects/snkit/badge/?version=latest)](https://snkit.readthedocs.io/en/latest/?badge=latest)
-[![Build Status](https://travis-ci.com/tomalrussell/snkit.png?branch=master)](https://travis-ci.com/tomalrussell/snkit)
+[![Build](https://github.com/tomalrussell/snkit/actions/workflows/test.yml/badge.svg)](https://github.com/tomalrussell/snkit/actions/workflows/test.yml)
 [![License](https://img.shields.io/pypi/l/snkit.svg)](https://opensource.org/licenses/MIT)
 [![PyPI version](https://img.shields.io/pypi/v/snkit.svg)](https://pypi.org/project/snkit/)
 [![DOI](https://zenodo.org/badge/129739785.svg)](https://doi.org/10.5281/zenodo.3269518)
-[![Poster](https://img.shields.io/badge/poster-10.6084%2Fm9.figshare.11864826.v1-red)](https://doi.org/10.6084/m9.figshare.11864826.v1)
+[![Poster](https://img.shields.io/badge/poster-10.6084%2Fm9.figshare.11864826.v1-purple)](https://doi.org/10.6084/m9.figshare.11864826.v1)
 <!--
 TODO: enable after publication
 [![Conda Forge version](https://anaconda.org/conda-forge/snkit/badges/version.svg)](https://anaconda.org/conda-forge/snkit)
@@ -63,7 +63,7 @@ geometry | id | from_id | to_id | other attributes...
 
 Install system libraries (only tested on Ubuntu):
 
-    sudo apt-get install -y libspatialindex-dev libgeos-dev gdal-bin
+    sudo apt-get install -y libgeos-dev gdal-bin
 
 Or use [conda](https://docs.conda.io/en/latest/miniconda.html) to install major dependencies:
 
@@ -76,6 +76,21 @@ Install or upgrade `snkit` using pip:
 See the [demo
 notebook](https://github.com/tomalrussell/snkit/blob/master/notebooks/snkit-demo.ipynb) for a
 small demonstration.
+
+## Development
+
+Clone this repository:
+
+    git clone git@github.com:tomalrussell/snkit.git
+
+Maybe set up a virtualenv or conda environment, as you wish. Then install `snkit` in editable
+mode, with development packages:
+
+    pip install -e .[dev]
+
+Run the tests:
+
+    python -m pytest tests/
 
 
 ## Testimonials 💯 👍 😊
