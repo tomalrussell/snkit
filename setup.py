@@ -52,8 +52,8 @@ setup(
         'geopandas>=0.10',
         'pygeos>=0.12'
     ],
-    extras_require=
-        'dev': ['black', 'nbstripout', 'pytest', 'pytest-cov'],{
+    extras_require={
+        'dev': ['black', 'nbstripout', 'pytest', 'pytest-cov'],
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
