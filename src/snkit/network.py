@@ -17,9 +17,6 @@ from shapely.geometry import (
 )
 from shapely.ops import split, linemerge
 
-# workaround for geopandas >0.9 until snkit #37 and geopandas #1977 are fixed
-geopandas._compat.USE_PYGEOS = False
-
 # optional progress bars
 if "SNKIT_PROGRESS" in os.environ and os.environ["SNKIT_PROGRESS"] in ("1",
                                                                        "TRUE"):
@@ -501,12 +498,8 @@ def nearest_edge(point, edges):
 
 def nearest(geom, gdf):
     """Find the element of a GeoDataFrame nearest a shapely geometry"""
-    matches_idx = gdf.sindex.nearest(geom.bounds)
-    nearest_geom = min(
-        [gdf.iloc[match_idx] for match_idx in matches_idx],
-        key=lambda match: geom.distance(match.geometry),
-    )
-    return nearest_geom
+    match_idx = gdf.sindex.nearest(geom, return_all=False)[1][0]
+    return gdf.loc[match_idx]
 
 
 def edges_within(point, edges, distance):

@@ -1,12 +1,9 @@
 # requirements
-fiona>=1.7.13
-geopandas==0.4.0
-pandas==0.23.4
-rtree>=0.8
-shapely>=1.6
+fiona>=1.8
+geopandas==0.10.2
+pandas==1.4.1
+shapely>=1.8
 
 # test/lint
-attrs>=17.4  # to fix pytest compatibility on python 3.6
-pylint
-pytest>=4.6
+pytest
 pytest-cov
