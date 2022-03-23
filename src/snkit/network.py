@@ -1,7 +1,12 @@
 """Network representation and utilities
 """
 import os
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
 import geopandas
+
 import numpy as np
 import pandas
 import shapely.errors

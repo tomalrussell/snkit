@@ -1,7 +1,12 @@
 """Test core objects/concepts
 """
 # pylint: disable=C0103
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
 from geopandas import GeoDataFrame
+
 from pandas.testing import assert_frame_equal
 from pytest import fixture
 from shapely.geometry import Point, LineString, MultiPoint
