@@ -10,6 +10,11 @@ with warnings.catch_warnings():
 import numpy as np
 import pandas
 import shapely.errors
+try:
+    import networkx as nx
+    USE_NX = True
+except ImportError:
+    USE_NX = False
 
 from geopandas import GeoDataFrame
 from shapely.geometry import (
@@ -673,3 +678,60 @@ def set_precision(geom, precision):
         np.array(geom_mapping["coordinates"]), precision
     )
     return shape(geom_mapping)
+
+
+def to_networkx(network,directed=False,weight_col=None):
+    """Return a networkx graph
+    """
+    if not USE_NX:
+        raise ImportError('No module named networkx')
+    else:
+        # init graph
+        if not directed:
+            G = nx.Graph()
+        else:
+            G = nx.MultiDiGraph()
+        # get nodes from network data
+        G.add_nodes_from(network.nodes.id.to_list())
+        # add nodal positions from geom
+        network.nodes['pos'] = list(zip(network.nodes.geometry.x, network.nodes.geometry.y))
+        pos = network.nodes.set_index('id').to_dict()['pos']
+        for n,p in pos.items():
+            G.nodes[n]['pos'] = p
+        # get edges from network data
+        if weight_col is None:
+            network.edges['weight'] = network.edges.geometry.length
+            edges_as_list = list(zip(network.edges.from_id,network.edges.to_id,network.edges.weight))
+        else:
+            edges_as_list = list(zip(network.edges.from_id,network.edges.to_id,network.edges[weight_col]))
+        # add edges to graph
+        G.add_weighted_edges_from(edges_as_list)
+        return G
+
+
+def get_connected_components(network):
+    """Get connected components within network and id to each individual graph
+    """
+    if not USE_NX:
+        raise ImportError('No module named networkx')
+    else:
+        G = to_networkx(network)
+        return sorted(nx.connected_components(G), key = len, reverse=True)
+
+
+def add_component_ids(network,id_col='component_id'):
+    """Add column of component IDs to network data
+    """
+    # get connected components
+    connected_parts = get_connected_components(network)
+    # add unique id to each graph
+    network.edges[id_col] = 0 # init id_col
+    network.nodes[id_col] = 0 # init id_col
+    for count, part in enumerate(connected_parts):
+        # edges
+        network.edges.loc[ (network.edges.from_id.isin(list(part))) | \
+                           (network.edges.to_id.isin(list(part))), id_col ] = count + 1
+        # nodes
+        network.nodes.loc[ (network.nodes.id.isin(list(part))), id_col] = count + 1 
+    # return
+    return network

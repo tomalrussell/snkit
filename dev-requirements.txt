@@ -7,3 +7,4 @@ black
 nbstripout
 pytest
 pytest-cov
+networkx>=1.9
