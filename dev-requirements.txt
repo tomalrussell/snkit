@@ -1,6 +1,7 @@
 # requirements
 geopandas>=0.10
 pygeos>=0.12
+networkx>=1.9
 
 # test/lint
 black
