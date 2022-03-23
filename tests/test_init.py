@@ -8,7 +8,7 @@ with warnings.catch_warnings():
     from geopandas import GeoDataFrame
 
 from pandas.testing import assert_frame_equal
-from pytest import fixture
+from pytest import fixture, mark
 from shapely.geometry import Point, LineString, MultiPoint
 
 try:
@@ -359,6 +359,7 @@ def test_passing_slice():
     assert_frame_equal(actual, expected)
 
 
+@mark.skipif(not USE_NX, reason="networkx not available")
 def test_to_networkx(connected):
     '''test to networkx
     '''
