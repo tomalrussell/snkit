@@ -5,7 +5,7 @@ import warnings
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-import geopandas
+    import geopandas
 
 import numpy as np
 import pandas
@@ -23,8 +23,7 @@ from shapely.geometry import (
 from shapely.ops import split, linemerge
 
 # optional progress bars
-if "SNKIT_PROGRESS" in os.environ and os.environ["SNKIT_PROGRESS"] in ("1",
-                                                                       "TRUE"):
+if "SNKIT_PROGRESS" in os.environ and os.environ["SNKIT_PROGRESS"] in ("1", "TRUE"):
     try:
         from tqdm import tqdm
     except ImportError:
@@ -47,6 +46,7 @@ class Network:
     edges : geopandas.geodataframe.GeoDataFrame
 
     """
+
     def __init__(self, nodes=None, edges=None):
         """ """
         if nodes is None:
@@ -69,8 +69,7 @@ class Network:
 
         """
         if crs is None and epsg is None:
-            raise ValueError(
-                "Either crs or epsg must be provided to Network.set_crs")
+            raise ValueError("Either crs or epsg must be provided to Network.set_crs")
 
         if epsg is not None:
             crs = {"init": "epsg:{}".format(epsg)}
@@ -90,8 +89,7 @@ class Network:
 
         """
         if crs is None and epsg is None:
-            raise ValueError(
-                "Either crs or epsg must be provided to Network.set_crs")
+            raise ValueError("Either crs or epsg must be provided to Network.set_crs")
 
         if epsg is not None:
             crs = {"init": "epsg:{}".format(epsg)}
@@ -121,9 +119,9 @@ def add_topology(network, id_col="id"):
     from_ids = []
     to_ids = []
 
-    for edge in tqdm(network.edges.itertuples(),
-                     desc="topology",
-                     total=len(network.edges)):
+    for edge in tqdm(
+        network.edges.itertuples(), desc="topology", total=len(network.edges)
+    ):
         start, end = line_endpoints(edge.geometry)
 
         start_node = nearest_node(start, network.nodes)
@@ -142,9 +140,9 @@ def add_topology(network, id_col="id"):
 def get_endpoints(network):
     """Get nodes for each edge endpoint"""
     endpoints = []
-    for edge in tqdm(network.edges.itertuples(),
-                     desc="endpoints",
-                     total=len(network.edges)):
+    for edge in tqdm(
+        network.edges.itertuples(), desc="endpoints", total=len(network.edges)
+    ):
         if edge.geometry is None:
             continue
         if edge.geometry.geometryType() == "MultiLineString":
@@ -171,6 +169,7 @@ def add_endpoints(network):
 
 def round_geometries(network, precision=3):
     """Round coordinates of all node points and vertices of edge linestrings to some precision"""
+
     def _set_precision(geom):
         return set_precision(geom, precision)
 
@@ -199,9 +198,9 @@ def split_multilinestrings(network):
     # multi_single_part_edges.geometry = multi_single_part_edges.geometry.apply(lambda geom: next(geom))
     # edges = edges[is_multi_multi_part].copy()
 
-    for edge in tqdm(edges.itertuples(index=False),
-                     desc="split_multi",
-                     total=len(edges)):
+    for edge in tqdm(
+        edges.itertuples(index=False), desc="split_multi", total=len(edges)
+    ):
         if edge.geometry.geom_type == "MultiLineString":
             edge_parts = list(edge.geometry)
         else:
@@ -214,9 +213,11 @@ def split_multilinestrings(network):
         simple_edge_attrs.append(attrs)
 
     simple_edge_geoms = GeoDataFrame(simple_edge_geoms, columns=["geometry"])
-    edges = (pandas.concat(simple_edge_attrs,
-                           axis=0).reset_index(drop=True).drop("geometry",
-                                                               axis=1))
+    edges = (
+        pandas.concat(simple_edge_attrs, axis=0)
+        .reset_index(drop=True)
+        .drop("geometry", axis=1)
+    )
     edges = pandas.concat([edges, simple_edge_geoms], axis=1)
 
     # edges = pandas.concat([edges, multi_single_part_edges, not_multi_edges], axis=0).reset_index(drop=True)
@@ -246,15 +247,16 @@ def merge_multilinestring(geom):
 
 def snap_nodes(network, threshold=None):
     """Move nodes (within threshold) to edges"""
-    def snap_node(node):
-        snap = nearest_point_on_edges(node.geometry, network.edges)
-        distance = snap.distance(node.geometry)
+
+    def snap_node(geom):
+        snap = nearest_point_on_edges(geom, network.edges)
+        distance = snap.distance(geom)
         if threshold is not None and distance > threshold:
-            snap = node.geometry
+            snap = geom
         return snap
 
-    snapped_geoms = network.nodes.apply(snap_node, axis=1)
     geom_col = geometry_column_name(network.nodes)
+    snapped_geoms = network.nodes[geom_col].apply(snap_node)
     nodes = pandas.concat(
         [
             network.nodes.drop(geom_col, axis=1),
@@ -269,9 +271,9 @@ def snap_nodes(network, threshold=None):
 def split_edges_at_nodes(network, tolerance=1e-9):
     """Split network edges where they intersect node geometries"""
     split_edges = []
-    for edge in tqdm(network.edges.itertuples(index=False),
-                     desc="split",
-                     total=len(network.edges)):
+    for edge in tqdm(
+        network.edges.itertuples(index=False), desc="split", total=len(network.edges)
+    ):
         hits = nodes_intersecting(edge.geometry, network.nodes, tolerance)
         split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
 
@@ -287,16 +289,13 @@ def split_edges_at_nodes(network, tolerance=1e-9):
     return Network(nodes=network.nodes, edges=edges)
 
 
-def link_nodes_to_edges_within(network,
-                               distance,
-                               condition=None,
-                               tolerance=1e-9):
+def link_nodes_to_edges_within(network, distance, condition=None, tolerance=1e-9):
     """Link nodes to all edges within some distance"""
     new_node_geoms = []
     new_edge_geoms = []
-    for node in tqdm(network.nodes.itertuples(index=False),
-                     desc="link",
-                     total=len(network.nodes)):
+    for node in tqdm(
+        network.nodes.itertuples(index=False), desc="link", total=len(network.nodes)
+    ):
         # for each node, find edges within
         edges = edges_within(node.geometry, network.edges, distance)
         for edge in edges.itertuples():
@@ -325,9 +324,9 @@ def link_nodes_to_nearest_edge(network, condition=None):
     """Link nodes to all edges within some distance"""
     new_node_geoms = []
     new_edge_geoms = []
-    for node in tqdm(network.nodes.itertuples(index=False),
-                     desc="link",
-                     total=len(network.nodes)):
+    for node in tqdm(
+        network.nodes.itertuples(index=False), desc="link", total=len(network.nodes)
+    ):
         # for each node, find edges within
         edge = nearest_edge(node.geometry, network.edges)
         if condition is not None and not condition(node, edge):
@@ -364,7 +363,8 @@ def merge_edges(network, id_col="id", by=None):
     """
     if "degree" not in network.nodes.columns:
         network.nodes["degree"] = network.nodes[id_col].apply(
-            lambda x: node_connectivity_degree(x, network))
+            lambda x: node_connectivity_degree(x, network)
+        )
 
     degree2 = list(network.nodes[id_col].loc[network.nodes.degree == 2])
     d2_set = set(degree2)
@@ -379,10 +379,15 @@ def merge_edges(network, id_col="id", by=None):
         while candidates:
             popped_cand = candidates.pop()
             matches = set(
-                np.unique(network.edges[[
-                    "from_id", "to_id"
-                ]].loc[(network.edges.from_id == popped_cand)
-                       | (network.edges.to_id == popped_cand)].values))
+                np.unique(
+                    network.edges[["from_id", "to_id"]]
+                    .loc[
+                        (network.edges.from_id == popped_cand)
+                        | (network.edges.to_id == popped_cand)
+                    ]
+                    .values
+                )
+            )
             matches.remove(popped_cand)
             matches = matches - node_path
             for match in matches:
@@ -394,8 +399,11 @@ def merge_edges(network, id_col="id", by=None):
                     node_path.add(match)
         if len(node_path) > 2:
             edge_paths.append(
-                network.edges.loc[(network.edges.from_id.isin(node_path))
-                                  & (network.edges.to_id.isin(node_path))])
+                network.edges.loc[
+                    (network.edges.from_id.isin(node_path))
+                    & (network.edges.to_id.isin(node_path))
+                ]
+            )
 
     concat_edge_paths = []
     unique_edge_ids = set()
@@ -435,11 +443,10 @@ def merge_edges(network, id_col="id", by=None):
     edges_new = edges_new.loc[~(edges_new.id.isin(list(unique_edge_ids)))]
     edges_new.geometry = edges_new.geometry.apply(merge_multilinestring)
     edges = pandas.concat(
-        [edges_new, pandas.concat(concat_edge_paths).reset_index()],
-        sort=False)
+        [edges_new, pandas.concat(concat_edge_paths).reset_index()], sort=False
+    )
 
-    nodes = network.nodes.set_index(id_col).loc[list(
-        new_node_ids)].copy().reset_index()
+    nodes = network.nodes.set_index(id_col).loc[list(new_node_ids)].copy().reset_index()
 
     return Network(nodes=nodes, edges=edges)
 
@@ -456,7 +463,22 @@ def geometry_column_name(gdf):
 def matching_gdf_from_geoms(gdf, geoms):
     """Create a geometry-only GeoDataFrame with column name to match an existing GeoDataFrame"""
     geom_col = geometry_column_name(gdf)
-    return GeoDataFrame(geoms, columns=[geom_col])
+    geom_arr = geoms_to_array(geoms)
+    return GeoDataFrame(geom_arr, columns=[geom_col])
+
+
+def geoms_to_array(geoms):
+    geom_arr = np.empty(len(geoms), dtype="object")
+
+    # Filter warnings until Shapely 2.0
+    # see https://shapely.readthedocs.io/en/stable/migration.html
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", category=shapely.errors.ShapelyDeprecationWarning
+        )
+        geom_arr[:] = geoms
+
+    return geom_arr
 
 
 def concat_dedup(dfs):
@@ -471,8 +493,9 @@ def concat_dedup(dfs):
 
 
 def node_connectivity_degree(node, network):
-    return len(network.edges[(network.edges.from_id == node) |
-                             (network.edges.to_id == node)])
+    return len(
+        network.edges[(network.edges.from_id == node) | (network.edges.to_id == node)]
+    )
 
 
 def drop_duplicate_geometries(gdf, keep="first"):
@@ -481,7 +504,7 @@ def drop_duplicate_geometries(gdf, keep="first"):
     # discussed in https://github.com/geopandas/geopandas/issues/521
     mask = gdf.geometry.apply(lambda geom: geom.wkb)
     # use dropped duplicates index to drop from actual dataframe
-    return gdf.iloc[mask.drop_duplicates(keep).index]
+    return gdf.iloc[mask.drop_duplicates(keep=keep).index]
 
 
 def nearest_point_on_edges(point, edges):
@@ -551,8 +574,9 @@ def _intersects_gdf(geom, gdf):
 def line_endpoints(line):
     """Return points at first and last vertex of a line"""
     try:
-        start = Point(line.coords[0])
-        end = Point(line.coords[-1])
+        coords = np.array(line.coords)
+        start = Point(coords[0])
+        end = Point(coords[-1])
     except NotImplementedError as e:
         print(line)
         raise e
@@ -574,7 +598,7 @@ def split_edge_at_points(edge, points, tolerance=1e-9):
 def split_line(line, points, tolerance=1e-9):
     """Split line at point or multipoint, within some tolerance"""
     to_split = snap_line(line, points, tolerance)
-    return list(split(to_split, points))
+    return list(split(to_split, points).geoms)
 
 
 def snap_line(line, points, tolerance=1e-9):
@@ -583,9 +607,7 @@ def snap_line(line, points, tolerance=1e-9):
         if points.distance(line) < tolerance:
             line = add_vertex(line, points)
     elif points.geom_type == "MultiPoint":
-        points = [
-            point for point in points if point.distance(line) < tolerance
-        ]
+        points = [point for point in points.geoms if point.distance(line) < tolerance]
         for point in points:
             line = add_vertex(line, point)
     return line
@@ -594,9 +616,10 @@ def snap_line(line, points, tolerance=1e-9):
 def add_vertex(line, point):
     """Add a vertex to a line at a point"""
     v_idx = nearest_vertex_idx_on_line(point, line)
-    point_coords = tuple(point.coords[0])
+    point_coords = np.array(point.coords)[0]
+    line_coords = np.array(line.coords)
 
-    if point_coords == line.coords[v_idx]:
+    if (point_coords == line_coords[v_idx]).all():
         # nearest vertex could be identical to point, so return unchanged
         return line
 
@@ -604,21 +627,19 @@ def add_vertex(line, point):
     if v_idx == 0:
         # nearest vertex could be start, so insert just after (or could extend)
         insert_before_idx = 1
-    elif v_idx == len(line.coords) - 1:
+    elif v_idx == len(line_coords) - 1:
         # nearest vertex could be end, so insert just before (or could extend)
         insert_before_idx = v_idx
     else:
         # otherwise insert in between vertices of nearest segment
-        segment_before = LineString(
-            [line.coords[v_idx], line.coords[v_idx - 1]])
-        segment_after = LineString(
-            [line.coords[v_idx], line.coords[v_idx + 1]])
+        segment_before = LineString([line_coords[v_idx], line_coords[v_idx - 1]])
+        segment_after = LineString([line_coords[v_idx], line_coords[v_idx + 1]])
         if point.distance(segment_before) < point.distance(segment_after):
             insert_before_idx = v_idx
         else:
             insert_before_idx = v_idx + 1
     # insert point coords before index, return new linestring
-    new_coords = list(line.coords)
+    new_coords = list(line_coords)
     new_coords.insert(insert_before_idx, point_coords)
     return LineString(new_coords)
 
@@ -627,9 +648,14 @@ def nearest_vertex_idx_on_line(point, line):
     """Return the index of nearest vertex to a point on a line"""
     # distance to all points is calculated here - and this is called once per splitting point
     # any way to avoid this m x n behaviour?
+    # idea: put line vertices in an STRTree and query it repeatedly for nearest (with each
+    # splitting point)
+    line_coords = np.array(line.coords)
     nearest_idx, _ = min(
-        [(idx, point.distance(Point(coords)))
-         for idx, coords in enumerate(line.coords)],
+        [
+            (idx, point.distance(Point(coords)))
+            for idx, coords in enumerate(line_coords)
+        ],
         key=lambda item: item[1],
     )
     return nearest_idx
@@ -644,5 +670,6 @@ def set_precision(geom, precision):
     """Set geometry precision"""
     geom_mapping = mapping(geom)
     geom_mapping["coordinates"] = np.round(
-        np.array(geom_mapping["coordinates"]), precision)
+        np.array(geom_mapping["coordinates"]), precision
+    )
     return shape(geom_mapping)

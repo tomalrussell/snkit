@@ -280,11 +280,11 @@ def test_split_line():
     ])
 
     segments = snkit.network.split_line(line, points, tolerance=1e-3)
-    for point in points:
+    for point in points.geoms:
         assert point.distance(line) < 1e-3
     for segment in segments:
         print(segment)
-    assert len(segments) == len(points) - 1
+    assert len(segments) == len(points.geoms) - 1
 
     # consider duplicate points in linestring or in multipoint
     # consider points which will be considered duplicate within tolerance
