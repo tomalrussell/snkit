@@ -14,6 +14,7 @@ from shapely.geometry import Point, LineString, MultiPoint
 try:
     import networkx as nx
     from networkx.utils.misc import graphs_equal
+
     USE_NX = True
 except ImportError:
     USE_NX = False
@@ -361,15 +362,14 @@ def test_passing_slice():
 
 @mark.skipif(not USE_NX, reason="networkx not available")
 def test_to_networkx(connected):
-    '''test to networkx
-    '''
-    connected.nodes['id'] = ['n'+str(i) for i in connected.nodes.index]
+    """Test conversion to networkx"""
+    connected.nodes["id"] = ["n" + str(i) for i in connected.nodes.index]
     connected = snkit.network.add_topology(connected)
     G = snkit.network.to_networkx(connected)
-    
+
     G_true = nx.Graph()
-    G_true.add_node('n0',pos=(0, 0))
-    G_true.add_node('n1',pos=(0, 2))
-    G_true.add_edge('n0', 'n1', weight=2)
-    
+    G_true.add_node("n0", pos=(0, 0))
+    G_true.add_node("n1", pos=(0, 2))
+    G_true.add_edge("n0", "n1", weight=2)
+
     assert graphs_equal(G, G_true)
