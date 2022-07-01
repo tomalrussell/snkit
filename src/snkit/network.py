@@ -290,10 +290,75 @@ def split_edges_at_nodes(network, tolerance=1e-9):
 
     # combine dfs
     edges = pandas.concat(split_edges, axis=0)
-    # reset index and drop
     edges = edges.reset_index().drop("index", axis=1)
-    # return new network with split edges
+
     return Network(nodes=network.nodes, edges=edges)
+
+
+def split_edges_at_intersections(network, tolerance=1e-9):
+    """Split network edges where they intersect line geometries"""
+    split_edges = []
+    split_points = []
+    for edge in tqdm(
+        network.edges.itertuples(index=False), desc='split', total=len(network.edges)
+    ):
+        # note: the symmetry of intersection is not exploited here.
+        # (If A intersects B, then B intersects A)
+        # since edges are not modified within the loop, this has just
+        # potential performance consequences.
+
+        hits = edges_intersecting(edge.geometry, network.edges, tolerance)
+
+        hits_points = []
+        for hit in hits.geometry:
+            # first extract the actual intersections from the hits
+            # these are *new geometrical objects* not in the sindex
+            # therefore they cannot be returned by internal _intersects*
+            intersection = Point()
+            # restrict intersection to crossing
+            # this excludes self overlap and end-points intersections
+            # WARNING: how are self-crossing handled? (e.g. loop-like)
+            if edge.geometry.crosses(hit):
+                intersection = edge.geometry.intersection(hit)
+
+            # then keep track of the intersection points
+            geom_type = intersection.geom_type
+            if intersection.is_empty:
+                continue
+            elif geom_type == 'Point':
+                hits_points.append(intersection)
+            elif geom_type == 'MultiPoint':
+                for point in intersection.geoms:
+                    hits_points.append(point)
+            elif geom_type == 'MultiLineString':
+                # when lines almost overlap for a stretch
+                for line in intersection.geoms:
+                    start = Point(line.coords[0])
+                    end = Point(line.coords[-1])
+                    hits_points.append(start)
+                    hits_points.append(end)
+
+        # store the split edges and intersection points
+        split_points.extend(hits_points)
+        hits_points = MultiPoint(hits_points)
+        edges = split_edge_at_points(edge, hits_points, tolerance)
+        split_edges.append(edges)
+
+    # add the (potentially) split edges
+    edges = pandas.concat(split_edges, axis=0)
+    edges = edges.reset_index().drop("index", axis=1)
+
+    # combine the original nodes with the new intersection nodes
+    # dropping the duplicates.
+    # note: there are at least duplicates from above since intersections
+    # are checked twice
+    # note: intersection nodes are appended, and if any duplicates, the
+    # original counterparts are kept.
+    nodes = GeoDataFrame(geometry=split_points)
+    nodes = pandas.concat([network.nodes, nodes], axis=0).drop_duplicates()
+    nodes = nodes.reset_index().drop("index", axis=1)
+
+    return Network(nodes=nodes, edges=edges)
 
 
 def link_nodes_to_edges_within(network, distance, condition=None, tolerance=1e-9):
@@ -547,6 +612,11 @@ def nodes_intersecting(line, nodes, tolerance=1e-9):
     return intersects(line, nodes, tolerance)
 
 
+def edges_intersecting(line, edges, tolerance=1e-9):
+    """Find edges intersecting line"""
+    return intersects(line, edges, tolerance)
+
+
 def intersects(geom, gdf, tolerance=1e-9):
     """Find the subset of a GeoDataFrame intersecting with a shapely geometry"""
     return _intersects(geom, gdf, tolerance)
@@ -595,7 +665,7 @@ def split_edge_at_points(edge, points, tolerance=1e-9):
     try:
         segments = split_line(edge.geometry, points, tolerance)
     except ValueError:
-        # if splitting fails, e.g. becuase points is empty GeometryCollection
+        # if splitting fails, e.g. because points is empty GeometryCollection
         segments = [edge.geometry]
     edges = GeoDataFrame([edge] * len(segments))
     edges.geometry = segments

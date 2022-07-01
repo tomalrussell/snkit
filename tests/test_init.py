@@ -141,6 +141,49 @@ def split_with_ids():
 
 
 @fixture
+def unsplit_intersection():
+    """Edges intersection, both edges not split
+       b
+       |
+    c--|--d
+       |
+       a
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((0, 1))
+    d = Point((2, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d]})
+    ab = LineString([a, b])
+    cd = LineString([c, d])
+    edges = GeoDataFrame(data={"geometry": [ab, cd]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_intersection():
+    """Edges intersection, both edges split
+       b
+       |
+    c--x--d
+       |
+       a
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((0, 1))
+    d = Point((2, 1))
+    x = Point((1, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, x]})
+    ax = LineString([a, x])
+    xb = LineString([x, b])
+    cx = LineString([c, x])
+    xd = LineString([x, d])
+    edges = GeoDataFrame(data={"geometry": [ax, xb, cx, xd]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
 def gap():
     """T-junction with nodes, edges not quite intersecting:
     b
@@ -227,6 +270,13 @@ def test_split_at_nodes(unsplit, split):
     """Should split edges at nodes, duplicating attributes if any"""
     actual = snkit.network.split_edges_at_nodes(unsplit)
     assert_frame_equal(split.edges, actual.edges)
+
+
+def test_split_at_intersections(unsplit_intersection, split_intersection):
+    """Should split edges at edges intersections"""
+    actual = snkit.network.split_edges_at_intersections(unsplit_intersection)
+    assert_frame_equal(split_intersection.edges, actual.edges)
+    assert_frame_equal(split_intersection.nodes, actual.nodes)
 
 
 def test_split_line():
