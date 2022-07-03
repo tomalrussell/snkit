@@ -23,6 +23,15 @@ import snkit
 import snkit.network
 
 
+def assert_frame_not_equal(*args, **kwargs):
+    try:
+        assert_frame_equal(*args, **kwargs)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError
+
+
 @fixture
 def edge_only():
     """Single edge:
@@ -184,6 +193,104 @@ def split_intersection():
 
 
 @fixture
+def unsplit_multiple_intersections():
+    """Multiple edges intersections, all edges unsplit
+       b   f
+       |   |
+    c--|---|--d
+       |   |
+       a   e
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((0, 1))
+    d = Point((3, 1))
+    e = Point((2, 0))
+    f = Point((2, 2))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f]})
+    ab = LineString([a, b])
+    cd = LineString([c, d])
+    ef = LineString([e, f])
+    edges = GeoDataFrame(data={"geometry": [ab, cd, ef]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_multiple_intersections():
+    """Multiple edges intersections, all edges split
+       b   f
+       |   |
+    c--x---y--d
+       |   |
+       a   e
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((0, 1))
+    d = Point((3, 1))
+    e = Point((2, 0))
+    f = Point((2, 2))
+    x = Point((1, 1))
+    y = Point((2, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f, x, y]})
+    ax = LineString([a, x])
+    xb = LineString([x, b])
+    cx = LineString([c, x])
+    xy = LineString([x, y])
+    yd = LineString([y, d])
+    ey = LineString([e, y])
+    yf = LineString([y, f])
+    edges = GeoDataFrame(data={"geometry": [ax, xb, cx, xy, yd, ey, yf]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def unsplit_overlapping_lines():
+    """Overlapping lines for a section
+       c--d
+       ||
+    b--|
+       |
+       a
+    """
+    a = Point((1, 0))
+    b = Point((0, 1))
+    c = Point((1, 2))
+    d = Point((2, 2))
+    # x is just a construction point
+    x = Point((1, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d]})
+    ac = LineString([a, c])
+    bd = LineString([b, x, c, d])
+    edges = GeoDataFrame(data={"geometry": [ac, bd]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_overlapping_lines():
+    """Split of overlapping lines for a section
+       c--d
+       ||
+    b--x
+       |
+       a
+    """
+    a = Point((1, 0))
+    b = Point((0, 1))
+    c = Point((1, 2))
+    d = Point((2, 2))
+    x = Point((1, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, x]})
+    ax = LineString([a, x])
+    bx = LineString([b, x])
+    xc = LineString([x, c])
+    cd = LineString([c, d])
+    # note that there are two edges 'xc'
+    edges = GeoDataFrame(data={"geometry": [ax, xc, bx, xc, cd]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
 def gap():
     """T-junction with nodes, edges not quite intersecting:
     b
@@ -277,6 +384,42 @@ def test_split_at_intersections(unsplit_intersection, split_intersection):
     actual = snkit.network.split_edges_at_intersections(unsplit_intersection)
     assert_frame_equal(split_intersection.edges, actual.edges)
     assert_frame_equal(split_intersection.nodes, actual.nodes)
+
+
+def test_split_at_intersection_already_split(split_intersection):
+    """Shouldn't do anything"""
+    actual = snkit.network.split_edges_at_intersections(split_intersection)
+    assert_frame_equal(split_intersection.edges, actual.edges)
+    assert_frame_equal(split_intersection.nodes, actual.nodes)
+
+
+def test_split_at_intersection_endnode(unsplit, split):
+    """Should split the edge at the endnode intersection
+    There shouldn't be any duplicate (no additional node).
+    """
+    actual = snkit.network.split_edges_at_intersections(unsplit)
+    assert_frame_not_equal(split.edges, actual.edges)
+    assert_frame_equal(split.nodes, actual.nodes)
+
+
+def test_split_at_intersection_multiple(
+    unsplit_multiple_intersections, split_multiple_intersections
+):
+    """Should split the edges at each intersection"""
+    actual = snkit.network.split_edges_at_intersections(unsplit_multiple_intersections)
+    assert_frame_equal(split_multiple_intersections.edges, actual.edges)
+    assert_frame_equal(split_multiple_intersections.nodes, actual.nodes)
+
+
+def test_split_intersection_overlapping_edges(
+    unsplit_overlapping_lines, split_overlapping_lines
+):
+    """Should split at the start and end of the intersecting sector
+    The intersecting sector should be duplicated.
+    """
+    actual = snkit.network.split_edges_at_intersections(unsplit_overlapping_lines)
+    assert_frame_equal(split_overlapping_lines.edges, actual.edges)
+    assert_frame_equal(split_overlapping_lines.nodes, actual.nodes)
 
 
 def test_split_line():

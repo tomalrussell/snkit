@@ -300,7 +300,7 @@ def split_edges_at_intersections(network, tolerance=1e-9):
     split_edges = []
     split_points = []
     for edge in tqdm(
-        network.edges.itertuples(index=False), desc='split', total=len(network.edges)
+        network.edges.itertuples(index=False), desc="split", total=len(network.edges)
     ):
         # note: the symmetry of intersection is not exploited here.
         # (If A intersects B, then B intersects A)
@@ -325,12 +325,12 @@ def split_edges_at_intersections(network, tolerance=1e-9):
             geom_type = intersection.geom_type
             if intersection.is_empty:
                 continue
-            elif geom_type == 'Point':
+            elif geom_type == "Point":
                 hits_points.append(intersection)
-            elif geom_type == 'MultiPoint':
+            elif geom_type == "MultiPoint":
                 for point in intersection.geoms:
                     hits_points.append(point)
-            elif geom_type == 'MultiLineString':
+            elif geom_type == "MultiLineString":
                 # when lines almost overlap for a stretch
                 for line in intersection.geoms:
                     start = Point(line.coords[0])
@@ -766,14 +766,20 @@ def to_networkx(network, directed=False, weight_col=None):
         G.add_nodes_from(network.nodes.id.to_list())
 
         # add nodal positions from geom
-        for node_id, x, y in zip(network.nodes.id, network.nodes.geometry.x, network.nodes.geometry.y):
+        for node_id, x, y in zip(
+            network.nodes.id, network.nodes.geometry.x, network.nodes.geometry.y
+        ):
             G.nodes[node_id]["pos"] = (x, y)
 
         # get edges from network data
         if weight_col is None:
             # default to geometry length
             edges_as_list = list(
-                zip(network.edges.from_id, network.edges.to_id, network.edges.geometry.length)
+                zip(
+                    network.edges.from_id,
+                    network.edges.to_id,
+                    network.edges.geometry.length,
+                )
             )
         else:
             edges_as_list = list(
