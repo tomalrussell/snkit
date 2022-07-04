@@ -315,28 +315,15 @@ def split_edges_at_intersections(network, tolerance=1e-9):
             # these are *new geometrical objects* not in the sindex
             # therefore they cannot be returned by internal _intersects*
             intersection = Point()
-            # restrict intersection to crossing
-            # this excludes self overlap and end-points intersections
-            # WARNING: how are self-crossing handled? (e.g. loop-like)
-            if edge.geometry.crosses(hit):
+            # excluding itself
+            # note that __eq__ is used on purpose instead of equals()
+            # this is stricter: for geometries constructed in the same way
+            # WARNING: this excludes sensical self-intersections, to be solved.
+            if edge != hit:
                 intersection = edge.geometry.intersection(hit)
 
-            # then keep track of the intersection points
-            geom_type = intersection.geom_type
-            if intersection.is_empty:
-                continue
-            elif geom_type == "Point":
-                hits_points.append(intersection)
-            elif geom_type == "MultiPoint":
-                for point in intersection.geoms:
-                    hits_points.append(point)
-            elif geom_type == "MultiLineString":
-                # when lines almost overlap for a stretch
-                for line in intersection.geoms:
-                    start = Point(line.coords[0])
-                    end = Point(line.coords[-1])
-                    hits_points.append(start)
-                    hits_points.append(end)
+            # then extract the intersection points
+            hits_points = intersection_endpoints(intersection, hits_points)
 
         # store the split edges and intersection points
         split_points.extend(hits_points)
@@ -658,6 +645,36 @@ def line_endpoints(line):
         print(line)
         raise e
     return start, end
+
+
+def intersection_endpoints(geom, output=[]):
+    """Return the points from an intersection geometry
+
+    It extracts the starting and ending points of intersection
+    geometries recursively and appends them to `output`.
+    This doesn't handle polygons or collections of polygons.
+    """
+    geom_type = geom.geom_type
+    if geom.is_empty:
+        pass
+    elif geom_type == "Point":
+        output.append(geom)
+    elif geom_type == "LineString":
+        start = Point(geom.coords[0])
+        end = Point(geom.coords[-1])
+        output.append(start)
+        output.append(end)
+    # recursively for collections of geometries
+    # note that there is no shared inheritance relationship
+    elif (
+        geom_type == "MultiPoint"
+        or geom_type == "MultiLineString"
+        or geom_type == "GeometryCollection"
+    ):
+        for geom_ in geom.geoms:
+            output = intersection_endpoints(geom_, output)
+
+    return output
 
 
 def split_edge_at_points(edge, points, tolerance=1e-9):

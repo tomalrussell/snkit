@@ -2,6 +2,7 @@
 """
 # pylint: disable=C0103
 import warnings
+from black import Line
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -21,15 +22,6 @@ except ImportError:
 
 import snkit
 import snkit.network
-
-
-def assert_frame_not_equal(*args, **kwargs):
-    try:
-        assert_frame_equal(*args, **kwargs)
-    except AssertionError:
-        pass
-    else:
-        raise AssertionError
 
 
 @fixture
@@ -291,6 +283,64 @@ def split_overlapping_lines():
 
 
 @fixture
+def unsplit_heterogeneous_intersection():
+    """Crossing point and overlapping line
+       b--c
+       |  |
+    e--|--------f
+       |   --d
+       a
+
+       * --d overlaps with e-f
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((2, 2))
+    # y is just a construction point
+    y = Point((2, 1))
+    d = Point((3, 1))
+    e = Point((0, 1))
+    f = Point((4, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f]})
+    ad = LineString([a, b, c, y, d])
+    ef = LineString([e, f])
+    edges = GeoDataFrame(data={"geometry": [ad, ef]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_heterogeneous_intersection():
+    """Crossing point and overlapping line, all edges split
+       b--c
+       |  |
+    e--x--y--d--f
+       |   --
+       a
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((2, 2))
+    d = Point((3, 1))
+    e = Point((0, 1))
+    f = Point((4, 1))
+    x = Point((1, 1))
+    y = Point((2, 1))
+    # note: this is order sensitive although it shouldn't matter
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f, y, x]})
+    ax = LineString([a, x])
+    xb = LineString([x, b])
+    bc = LineString([b, c])
+    cy = LineString([c, y])
+    yd = LineString([y, d])
+    ex = LineString([e, x])
+    xy = LineString([x, y])
+    df = LineString([d, f])
+    # note that there are two edges 'yd'
+    edges = GeoDataFrame(data={"geometry": [ax, xb, bc, cy, yd, ex, xy, yd, df]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
 def gap():
     """T-junction with nodes, edges not quite intersecting:
     b
@@ -395,10 +445,11 @@ def test_split_at_intersection_already_split(split_intersection):
 
 def test_split_at_intersection_endnode(unsplit, split):
     """Should split the edge at the endnode intersection
+
     There shouldn't be any duplicate (no additional node).
     """
     actual = snkit.network.split_edges_at_intersections(unsplit)
-    assert_frame_not_equal(split.edges, actual.edges)
+    assert_frame_equal(split.edges, actual.edges)
     assert_frame_equal(split.nodes, actual.nodes)
 
 
@@ -415,11 +466,23 @@ def test_split_intersection_overlapping_edges(
     unsplit_overlapping_lines, split_overlapping_lines
 ):
     """Should split at the start and end of the intersecting sector
+
     The intersecting sector should be duplicated.
     """
     actual = snkit.network.split_edges_at_intersections(unsplit_overlapping_lines)
     assert_frame_equal(split_overlapping_lines.edges, actual.edges)
     assert_frame_equal(split_overlapping_lines.nodes, actual.nodes)
+
+
+def test_split_intersection_heterogeneous(
+    unsplit_heterogeneous_intersection, split_heterogeneous_intersection
+):
+    """Should split at intersection points and sectors (endpoints)"""
+    actual = snkit.network.split_edges_at_intersections(
+        unsplit_heterogeneous_intersection
+    )
+    assert_frame_equal(split_heterogeneous_intersection.edges, actual.edges)
+    assert_frame_equal(split_heterogeneous_intersection.nodes, actual.nodes)
 
 
 def test_split_line():
