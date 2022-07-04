@@ -9,7 +9,7 @@ with warnings.catch_warnings():
 
 from pandas.testing import assert_frame_equal
 from pytest import fixture, mark
-from shapely.geometry import Point, LineString, MultiPoint
+from shapely.geometry import Point, LineString, MultiPoint, MultiLineString
 
 try:
     import networkx as nx
@@ -227,6 +227,52 @@ def test_split_at_nodes(unsplit, split):
     """Should split edges at nodes, duplicating attributes if any"""
     actual = snkit.network.split_edges_at_nodes(unsplit)
     assert_frame_equal(split.edges, actual.edges)
+
+
+def test_split_multilinestrings():
+    """Explode multilinestrings into linestrings"""
+
+    # point coordinates comprising three linestrings
+    mls_coords = [
+        (
+            (0, 0),
+            (0, 1),
+        ),
+        (
+            (1, 1),
+            (2, 2),
+            (2, 1),
+        ),
+        (
+            (0, 1),
+            (-1, 1),
+            (-1, 2),
+            (-1, 0),
+        ),
+    ]
+    # point coordsinate comprising a single linestring
+    ls_coords = [(4, 0), (4, 1), (4, 2)]
+
+    # make input network edges
+    edges = GeoDataFrame(
+        {
+            "data": ["MLS", "LS"],
+            "geometry": [MultiLineString(mls_coords), LineString(ls_coords)],
+        }
+    )
+    multi_network = snkit.network.Network(edges=edges)
+    # check we have two rows (multilinestring and linestring) in the input network
+    assert len(multi_network.edges) == 2
+
+    # split and check we have four rows (the resulting linestrings) in the output network
+    split_network = snkit.network.split_multilinestrings(multi_network)
+    assert len(split_network.edges) == 4
+
+    # check data is replicated from multilinestring to child linestrings
+    assert list(split_network.edges["data"].values) == ["MLS"] * 3 + ["LS"]
+
+    # check everything is reindexed
+    assert list(split_network.edges.index.values) == list(range(4))
 
 
 def test_split_line():
