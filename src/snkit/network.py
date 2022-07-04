@@ -264,12 +264,15 @@ def snap_nodes(network, threshold=None):
 
     geom_col = geometry_column_name(network.nodes)
     snapped_geoms = network.nodes[geom_col].apply(snap_node)
-    nodes = pandas.concat(
-        [
-            network.nodes.drop(geom_col, axis=1),
-            GeoDataFrame(snapped_geoms, columns=[geom_col]),
-        ],
-        axis=1,
+    nodes = GeoDataFrame(
+        pandas.concat(
+            [
+                network.nodes.drop(geom_col, axis=1),
+                GeoDataFrame(snapped_geoms, columns=[geom_col]),
+            ],
+            axis=1,
+        ),
+        crs=network.nodes.crs
     )
 
     return Network(nodes=nodes, edges=network.edges)
