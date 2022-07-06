@@ -186,50 +186,24 @@ def round_geometries(network, precision=3):
 
 
 def split_multilinestrings(network):
-    """Create multiple edges from any MultiLineString edge
-
-    Ensures that edge geometries are all LineStrings, duplicates attributes over any
-    created multi-edges.
     """
-    simple_edge_attrs = []
-    simple_edge_geoms = []
+    Create multiple edges from any MultiLineString edge
+
+    Ensures that edge geometries are all LineStrings, duplicates attributes
+    over any created multi-edges.
+    """
+
     edges = network.edges
+    geom_col: str = geometry_column_name(edges)
+    split_edges = edges.explode(column=geom_col, ignore_index=True)
 
-    # # Commented out idea about dealing with multi-part MultiLineStrings separately
-    # is_multi_single_part = edges.geometry.apply(lambda geom: geom.geom_type == 'MultiLineString' and len(geom) == 1)
-    # is_multi_multi_part = edges.geometry.apply(lambda geom: geom.geom_type == 'MultiLineString' and len(geom) > 1)
-    # is_not_multi = edges.geometry.apply(lambda geom: geom.geom_type != 'MultiLineString')
+    geo_types = set(split_edges.geom_type)
+    if geo_types != {'LineString'}:
+        raise ValueError(
+            f"exploded edges are of type(s) {geo_types} but should only be LineString"
+        )
 
-    # not_multi_edges = edges[is_not_multi].copy()
-    # multi_single_part_edges = edges[is_multi_single_part].copy()
-    # multi_single_part_edges.geometry = multi_single_part_edges.geometry.apply(lambda geom: next(geom))
-    # edges = edges[is_multi_multi_part].copy()
-
-    for edge in tqdm(
-        edges.itertuples(index=False), desc="split_multi", total=len(edges)
-    ):
-        if edge.geometry.geom_type == "MultiLineString":
-            edge_parts = list(edge.geometry)
-        else:
-            edge_parts = [edge.geometry]
-
-        for part in edge_parts:
-            simple_edge_geoms.append(part)
-
-        attrs = GeoDataFrame([edge] * len(edge_parts))
-        simple_edge_attrs.append(attrs)
-
-    simple_edge_geoms = GeoDataFrame(simple_edge_geoms, columns=["geometry"])
-    edges = (
-        pandas.concat(simple_edge_attrs, axis=0)
-        .reset_index(drop=True)
-        .drop("geometry", axis=1)
-    )
-    edges = pandas.concat([edges, simple_edge_geoms], axis=1)
-
-    # edges = pandas.concat([edges, multi_single_part_edges, not_multi_edges], axis=0).reset_index(drop=True)
-
-    return Network(nodes=network.nodes, edges=edges)
+    return Network(nodes=network.nodes, edges=split_edges)
 
 
 def merge_multilinestring(geom):
