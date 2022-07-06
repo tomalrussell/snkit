@@ -200,7 +200,7 @@ def split_multilinestrings(network):
     geo_types = set(split_edges.geom_type)
     if geo_types != {'LineString'}:
         raise ValueError(
-            f"exploded edges -> not only LineStrings {geo_types=}"
+            f"exploded edges are of type(s) {geo_types} but should only be LineString"
         )
 
     return Network(nodes=network.nodes, edges=split_edges)
