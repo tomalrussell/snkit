@@ -2,7 +2,6 @@
 """
 # pylint: disable=C0103
 import warnings
-from black import Line
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -341,6 +340,51 @@ def split_heterogeneous_intersection():
 
 
 @fixture
+def unsplit_self_intersection():
+    """A line crossing with itself
+       b--c
+       |  |
+    e--|--d
+       |
+       a
+    """
+    a = Point((1, 0))
+    e = Point((0, 1))
+    # 'b', 'c' and 'd' are construction points, not nodes
+    b = Point((1, 2))
+    c = Point((2, 2))
+    d = Point((2, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, e]})
+    ae = LineString([a, b, c, d, e])
+    edges = GeoDataFrame(data={"geometry": [ae]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_self_intersection():
+    """A line crossing with itself, edge split
+       b--c
+       |  |
+    e--x--d
+       |
+       a
+    """
+    a = Point((1, 0))
+    e = Point((0, 1))
+    x = Point((1, 1))
+    # 'b', 'c' and 'd' are construction points, not nodes
+    b = Point((1, 2))
+    c = Point((2, 2))
+    d = Point((2, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, e, x]})
+    ax = LineString([a, x])
+    xx = LineString([x, b, c, d, x])
+    xe = LineString([x, e])
+    edges = GeoDataFrame(data={"geometry": [ax, xx, xe]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
 def gap():
     """T-junction with nodes, edges not quite intersecting:
     b
@@ -483,6 +527,16 @@ def test_split_intersection_heterogeneous(
     )
     assert_frame_equal(split_heterogeneous_intersection.edges, actual.edges)
     assert_frame_equal(split_heterogeneous_intersection.nodes, actual.nodes)
+
+
+def test_split_intersection_self(unsplit_self_intersection, split_self_intersection):
+    """Should split at the intersection point
+
+    This will give 3 edges: two 'normal' edges, and a self-loop
+    """
+    actual = snkit.network.split_edges_at_intersections(unsplit_self_intersection)
+    assert_frame_equal(split_self_intersection.edges, actual.edges)
+    assert_frame_equal(split_self_intersection.nodes, actual.nodes)
 
 
 def test_split_line():

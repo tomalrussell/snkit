@@ -27,7 +27,9 @@ from shapely.geometry import (
     shape,
     mapping,
 )
-from shapely.ops import split, linemerge
+from shapely.ops import split, linemerge, unary_union
+
+from collections import Counter
 
 # optional progress bars
 if "SNKIT_PROGRESS" in os.environ and os.environ["SNKIT_PROGRESS"] in ("1", "TRUE"):
@@ -307,23 +309,7 @@ def split_edges_at_intersections(network, tolerance=1e-9):
         # since edges are not modified within the loop, this has just
         # potential performance consequences.
 
-        hits = edges_intersecting(edge.geometry, network.edges, tolerance)
-
-        hits_points = []
-        for hit in hits.geometry:
-            # first extract the actual intersections from the hits
-            # these are *new geometrical objects* not in the sindex
-            # therefore they cannot be returned by internal _intersects*
-            intersection = Point()
-            # excluding itself
-            # note that __eq__ is used on purpose instead of equals()
-            # this is stricter: for geometries constructed in the same way
-            # WARNING: this excludes sensical self-intersections, to be solved.
-            if edge != hit:
-                intersection = edge.geometry.intersection(hit)
-
-            # then extract the intersection points
-            hits_points = intersection_endpoints(intersection, hits_points)
+        hits_points = edges_intersecting_points(edge.geometry, network.edges, tolerance)
 
         # store the split edges and intersection points
         split_points.extend(hits_points)
@@ -594,14 +580,46 @@ def edges_within(point, edges, distance):
     return d_within(point, edges, distance)
 
 
-def nodes_intersecting(line, nodes, tolerance=1e-9):
-    """Find nodes intersecting line"""
-    return intersects(line, nodes, tolerance)
+def edges_intersecting_points(line, edges, tolerance=1e-9):
+    """Return intersection points of intersecting edges"""
+    hits = edges_intersecting(line, edges, tolerance)
+
+    hits_points = []
+    for hit in hits.geometry:
+        # first extract the actual intersections from the hits
+        # for being new geometrical objects, they are not in the sindex
+        intersection = line.intersection(hit)
+        # if the line is not simple, there is a self-crossing point
+        # (note that it will always interact with itself)
+        # note that __eq__ is used on purpose instead of equals()
+        # this is stricter: for geometries constructed in the same way
+        # it makes sense since the sindex is used here
+        if line == hit and not line.is_simple:
+            # there is not built-in way to find self-crossing points
+            # duplicated points after unary_union are the intersections
+            intersection = unary_union(line)
+            segments_coordinates = []
+            for seg in intersection.geoms:
+                segments_coordinates.extend(list(seg.coords))
+            intersection = [
+                Point(p) for p, c in Counter(segments_coordinates).items() if c > 1
+            ]
+            intersection = MultiPoint(intersection)
+
+        # then extract the intersection points
+        hits_points = intersection_endpoints(intersection, hits_points)
+
+    return hits_points
 
 
 def edges_intersecting(line, edges, tolerance=1e-9):
     """Find edges intersecting line"""
     return intersects(line, edges, tolerance)
+
+
+def nodes_intersecting(line, nodes, tolerance=1e-9):
+    """Find nodes intersecting line"""
+    return intersects(line, nodes, tolerance)
 
 
 def intersects(geom, gdf, tolerance=1e-9):
@@ -647,13 +665,16 @@ def line_endpoints(line):
     return start, end
 
 
-def intersection_endpoints(geom, output=[]):
+def intersection_endpoints(geom, output=None):
     """Return the points from an intersection geometry
 
     It extracts the starting and ending points of intersection
     geometries recursively and appends them to `output`.
     This doesn't handle polygons or collections of polygons.
     """
+    if output is None:
+        output = []
+
     geom_type = geom.geom_type
     if geom.is_empty:
         pass
@@ -692,6 +713,13 @@ def split_edge_at_points(edge, points, tolerance=1e-9):
 def split_line(line, points, tolerance=1e-9):
     """Split line at point or multipoint, within some tolerance"""
     to_split = snap_line(line, points, tolerance)
+    # when the splitter is a self-intersection point, shapely splits in
+    # two parts only in a semi-arbitrary way, see the related question:
+    # https://gis.stackexchange.com/questions/435879/python-shapely-split-a-complex-line-at-self-intersections?noredirect=1#comment711214_435879
+    # checking only that the line is complex might not be enough
+    # but the difference operation is useless in the worst case
+    if not to_split.is_simple:
+        to_split = to_split.difference(points)
     return list(split(to_split, points).geoms)
 
 
