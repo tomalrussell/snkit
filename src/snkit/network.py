@@ -484,11 +484,13 @@ def node_connectivity_degree(node, network):
 
 def drop_duplicate_geometries(gdf, keep="first"):
     """Drop duplicate geometries from a dataframe"""
+
     # convert to wkb so drop_duplicates will work
     # discussed in https://github.com/geopandas/geopandas/issues/521
-    mask = gdf.geometry.apply(lambda geom: geom.wkb)
-    # use dropped duplicates index to drop from actual dataframe
-    return gdf.iloc[mask.drop_duplicates(keep=keep).index]
+    mask = gdf.geometry.apply(lambda geom: geom.wkb).drop_duplicates(keep=keep).index
+
+    # use mask to drop from actual dataframe
+    return gdf.loc[mask]
 
 
 def nearest_point_on_edges(point, edges):

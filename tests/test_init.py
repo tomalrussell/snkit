@@ -7,6 +7,7 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     from geopandas import GeoDataFrame
 
+import pandas as pd
 from pandas.testing import assert_frame_equal
 from pytest import fixture, mark
 from shapely.geometry import Point, LineString, MultiPoint, MultiLineString
@@ -404,6 +405,24 @@ def test_passing_slice():
 
     print(actual)
     assert_frame_equal(actual, expected)
+
+
+def test_drop_duplicate_geometries():
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((0, 1))
+    ac = LineString([a, c])
+    cb = LineString([c, b])
+    # use an index that doesn't start from 0 to check our indexing hygiene
+    index = pd.Index([2, 3, 5, 7, 11, 13])
+    gdf_with_dupes = GeoDataFrame(
+        index=index,
+        data=[a, a, b, ac, ac, cb],
+        columns=["geometry"]
+    )
+    deduped = snkit.network.drop_duplicate_geometries(gdf_with_dupes)
+    # we should have just the first of each duplicate item
+    assert (deduped.index == pd.Index([2, 5, 7, 13])).all()
 
 
 @mark.skipif(not USE_NX, reason="networkx not available")
