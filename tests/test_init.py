@@ -142,6 +142,250 @@ def split_with_ids():
 
 
 @fixture
+def unsplit_intersection():
+    """Edges intersection, both edges not split
+       b
+       |
+    c--|--d
+       |
+       a
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((0, 1))
+    d = Point((2, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d]})
+    ab = LineString([a, b])
+    cd = LineString([c, d])
+    edges = GeoDataFrame(data={"geometry": [ab, cd]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_intersection():
+    """Edges intersection, both edges split
+       b
+       |
+    c--x--d
+       |
+       a
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((0, 1))
+    d = Point((2, 1))
+    x = Point((1, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, x]})
+    ax = LineString([a, x])
+    xb = LineString([x, b])
+    cx = LineString([c, x])
+    xd = LineString([x, d])
+    edges = GeoDataFrame(data={"geometry": [ax, xb, cx, xd]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def unsplit_multiple_intersections():
+    """Multiple edges intersections, all edges unsplit
+       b   f
+       |   |
+    c--|---|--d
+       |   |
+       a   e
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((0, 1))
+    d = Point((3, 1))
+    e = Point((2, 0))
+    f = Point((2, 2))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f]})
+    ab = LineString([a, b])
+    cd = LineString([c, d])
+    ef = LineString([e, f])
+    edges = GeoDataFrame(data={"geometry": [ab, cd, ef]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_multiple_intersections():
+    """Multiple edges intersections, all edges split
+       b   f
+       |   |
+    c--x---y--d
+       |   |
+       a   e
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((0, 1))
+    d = Point((3, 1))
+    e = Point((2, 0))
+    f = Point((2, 2))
+    x = Point((1, 1))
+    y = Point((2, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f, x, y]})
+    ax = LineString([a, x])
+    xb = LineString([x, b])
+    cx = LineString([c, x])
+    xy = LineString([x, y])
+    yd = LineString([y, d])
+    ey = LineString([e, y])
+    yf = LineString([y, f])
+    edges = GeoDataFrame(data={"geometry": [ax, xb, cx, xy, yd, ey, yf]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def unsplit_overlapping_lines():
+    """Overlapping lines for a section
+       c--d
+       ||
+    b--|
+       |
+       a
+    """
+    a = Point((1, 0))
+    b = Point((0, 1))
+    c = Point((1, 2))
+    d = Point((2, 2))
+    # x is just a construction point
+    x = Point((1, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d]})
+    ac = LineString([a, c])
+    bd = LineString([b, x, c, d])
+    edges = GeoDataFrame(data={"geometry": [ac, bd]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_overlapping_lines():
+    """Split of overlapping lines for a section
+       c--d
+       ||
+    b--x
+       |
+       a
+    """
+    a = Point((1, 0))
+    b = Point((0, 1))
+    c = Point((1, 2))
+    d = Point((2, 2))
+    x = Point((1, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, x]})
+    ax = LineString([a, x])
+    bx = LineString([b, x])
+    xc = LineString([x, c])
+    cd = LineString([c, d])
+    # note that there are two edges 'xc'
+    edges = GeoDataFrame(data={"geometry": [ax, xc, bx, xc, cd]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def unsplit_heterogeneous_intersection():
+    """Crossing point and overlapping line
+       b--c
+       |  |
+    e--|--------f
+       |   --d
+       a
+
+       * --d overlaps with e-f
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((2, 2))
+    # y is just a construction point
+    y = Point((2, 1))
+    d = Point((3, 1))
+    e = Point((0, 1))
+    f = Point((4, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f]})
+    ad = LineString([a, b, c, y, d])
+    ef = LineString([e, f])
+    edges = GeoDataFrame(data={"geometry": [ad, ef]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_heterogeneous_intersection():
+    """Crossing point and overlapping line, all edges split
+       b--c
+       |  |
+    e--x--y--d--f
+       |   --
+       a
+    """
+    a = Point((1, 0))
+    b = Point((1, 2))
+    c = Point((2, 2))
+    d = Point((3, 1))
+    e = Point((0, 1))
+    f = Point((4, 1))
+    x = Point((1, 1))
+    y = Point((2, 1))
+    # note: this is order sensitive although it shouldn't matter
+    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f, y, x]})
+    ax = LineString([a, x])
+    xb = LineString([x, b])
+    bc = LineString([b, c])
+    cy = LineString([c, y])
+    yd = LineString([y, d])
+    ex = LineString([e, x])
+    xy = LineString([x, y])
+    df = LineString([d, f])
+    # note that there are two edges 'yd'
+    edges = GeoDataFrame(data={"geometry": [ax, xb, bc, cy, yd, ex, xy, yd, df]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def unsplit_self_intersection():
+    """A line crossing with itself
+       b--c
+       |  |
+    e--|--d
+       |
+       a
+    """
+    a = Point((1, 0))
+    e = Point((0, 1))
+    # 'b', 'c' and 'd' are construction points, not nodes
+    b = Point((1, 2))
+    c = Point((2, 2))
+    d = Point((2, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, e]})
+    ae = LineString([a, b, c, d, e])
+    edges = GeoDataFrame(data={"geometry": [ae]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
+def split_self_intersection():
+    """A line crossing with itself, edge split
+       b--c
+       |  |
+    e--x--d
+       |
+       a
+    """
+    a = Point((1, 0))
+    e = Point((0, 1))
+    x = Point((1, 1))
+    # 'b', 'c' and 'd' are construction points, not nodes
+    b = Point((1, 2))
+    c = Point((2, 2))
+    d = Point((2, 1))
+    nodes = GeoDataFrame(data={"geometry": [a, e, x]})
+    ax = LineString([a, x])
+    xx = LineString([x, b, c, d, x])
+    xe = LineString([x, e])
+    edges = GeoDataFrame(data={"geometry": [ax, xx, xe]})
+    return snkit.Network(edges=edges, nodes=nodes)
+
+
+@fixture
 def gap():
     """T-junction with nodes, edges not quite intersecting:
     b
@@ -230,50 +474,70 @@ def test_split_at_nodes(unsplit, split):
     assert_frame_equal(split.edges, actual.edges)
 
 
-def test_split_multilinestrings():
-    """Explode multilinestrings into linestrings"""
+def test_split_at_intersections(unsplit_intersection, split_intersection):
+    """Should split edges at edges intersections"""
+    actual = snkit.network.split_edges_at_intersections(unsplit_intersection)
+    assert_frame_equal(split_intersection.edges, actual.edges)
+    assert_frame_equal(split_intersection.nodes, actual.nodes)
 
-    # point coordinates comprising three linestrings
-    mls_coords = [
-        (
-            (0, 0),
-            (0, 1),
-        ),
-        (
-            (1, 1),
-            (2, 2),
-            (2, 1),
-        ),
-        (
-            (0, 1),
-            (-1, 1),
-            (-1, 2),
-            (-1, 0),
-        ),
-    ]
-    # point coordsinate comprising a single linestring
-    ls_coords = [(4, 0), (4, 1), (4, 2)]
 
-    # make input network edges
-    edges = GeoDataFrame(
-        {
-            "data": ["MLS", "LS"],
-            "geometry": [MultiLineString(mls_coords), LineString(ls_coords)],
-        }
+def test_split_at_intersection_already_split(split_intersection):
+    """Shouldn't do anything"""
+    actual = snkit.network.split_edges_at_intersections(split_intersection)
+    assert_frame_equal(split_intersection.edges, actual.edges)
+    assert_frame_equal(split_intersection.nodes, actual.nodes)
+
+
+def test_split_at_intersection_endnode(unsplit, split):
+    """Should split the edge at the endnode intersection
+
+    There shouldn't be any duplicate (no additional node).
+    """
+    actual = snkit.network.split_edges_at_intersections(unsplit)
+    assert_frame_equal(split.edges, actual.edges)
+    assert_frame_equal(split.nodes, actual.nodes)
+
+
+def test_split_at_intersection_multiple(
+    unsplit_multiple_intersections, split_multiple_intersections
+):
+    """Should split the edges at each intersection"""
+    actual = snkit.network.split_edges_at_intersections(unsplit_multiple_intersections)
+    assert_frame_equal(split_multiple_intersections.edges, actual.edges)
+    assert_frame_equal(split_multiple_intersections.nodes, actual.nodes)
+
+
+def test_split_intersection_overlapping_edges(
+    unsplit_overlapping_lines, split_overlapping_lines
+):
+    """Should split at the start and end of the intersecting sector
+
+    The intersecting sector should be duplicated.
+    """
+    actual = snkit.network.split_edges_at_intersections(unsplit_overlapping_lines)
+    assert_frame_equal(split_overlapping_lines.edges, actual.edges)
+    assert_frame_equal(split_overlapping_lines.nodes, actual.nodes)
+
+
+def test_split_intersection_heterogeneous(
+    unsplit_heterogeneous_intersection, split_heterogeneous_intersection
+):
+    """Should split at intersection points and sectors (endpoints)"""
+    actual = snkit.network.split_edges_at_intersections(
+        unsplit_heterogeneous_intersection
     )
-    multi_network = snkit.network.Network(edges=edges)
-    # check we have two rows (multilinestring and linestring) in the input network
-    assert len(multi_network.edges) == 2
+    assert_frame_equal(split_heterogeneous_intersection.edges, actual.edges)
+    assert_frame_equal(split_heterogeneous_intersection.nodes, actual.nodes)
 
-    # split and check we have four rows (the resulting linestrings) in the output network
-    split_network = snkit.network.split_multilinestrings(multi_network)
-    assert len(split_network.edges) == 4
 
-    # check data is replicated from multilinestring to child linestrings
-    assert list(split_network.edges["data"].values) == ["MLS"] * 3 + ["LS"]
+def test_split_intersection_self(unsplit_self_intersection, split_self_intersection):
+    """Should split at the intersection point
 
-    # check everything is reindexed
-    assert list(split_network.edges.index.values) == list(range(4))
+    This will give 3 edges: two 'normal' edges, and a self-loop
+    """
+    actual = snkit.network.split_edges_at_intersections(unsplit_self_intersection)
+    assert_frame_equal(split_self_intersection.edges, actual.edges)
+    assert_frame_equal(split_self_intersection.nodes, actual.nodes)
 
 
 def test_split_line():
@@ -341,6 +605,52 @@ def test_split_line():
 
     # consider duplicate points in linestring or in multipoint
     # consider points which will be considered duplicate within tolerance
+
+
+def test_split_multilinestrings():
+    """Explode multilinestrings into linestrings"""
+
+    # point coordinates comprising three linestrings
+    mls_coords = [
+        (
+            (0, 0),
+            (0, 1),
+        ),
+        (
+            (1, 1),
+            (2, 2),
+            (2, 1),
+        ),
+        (
+            (0, 1),
+            (-1, 1),
+            (-1, 2),
+            (-1, 0),
+        ),
+    ]
+    # point coordsinate comprising a single linestring
+    ls_coords = [(4, 0), (4, 1), (4, 2)]
+
+    # make input network edges
+    edges = GeoDataFrame(
+        {
+            "data": ["MLS", "LS"],
+            "geometry": [MultiLineString(mls_coords), LineString(ls_coords)],
+        }
+    )
+    multi_network = snkit.network.Network(edges=edges)
+    # check we have two rows (multilinestring and linestring) in the input network
+    assert len(multi_network.edges) == 2
+
+    # split and check we have four rows (the resulting linestrings) in the output network
+    split_network = snkit.network.split_multilinestrings(multi_network)
+    assert len(split_network.edges) == 4
+
+    # check data is replicated from multilinestring to child linestrings
+    assert list(split_network.edges["data"].values) == ["MLS"] * 3 + ["LS"]
+
+    # check everything is reindexed
+    assert list(split_network.edges.index.values) == list(range(4))
 
 
 def test_link_nodes_to_edges_within(gap, bridged):
