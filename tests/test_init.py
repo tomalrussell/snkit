@@ -428,6 +428,31 @@ def bridged():
     return snkit.Network(edges=edges, nodes=nodes)
 
 
+@fixture
+def two_components(gap):
+    """Two network components
+    b
+    |
+    |   c--d--e
+    |
+    a
+    """
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((1, 1))
+    d = Point((2, 1))
+    e = Point((3, 1))
+    nodes = GeoDataFrame([a, b, c, d, e], columns=["geometry"])
+    ab = LineString([a, b])
+    cd = LineString([c, d])
+    de = LineString([d, e])
+    edges = GeoDataFrame([ab, cd, de], columns=["geometry"])
+    network = snkit.Network(edges=edges, nodes=nodes)
+    network = snkit.network.add_ids(network)
+    network = snkit.network.add_topology(network)
+    return network
+
+
 def test_init():
     """Should create an empty network"""
     net = snkit.Network()
@@ -748,3 +773,8 @@ def test_to_networkx(connected):
     G_true.add_edge("n0", "n1", weight=2)
 
     assert graphs_equal(G, G_true)
+
+
+def test_add_component_ids(two_components):
+    labelled = snkit.network.add_component_ids(two_components)
+    assert all(labelled.edges.component_id == pd.Series([2, 1, 1]))
