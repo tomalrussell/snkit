@@ -827,23 +827,25 @@ def get_connected_components(network):
         return sorted(nx.connected_components(G), key=len, reverse=True)
 
 
-def add_component_ids(network, id_col="component_id"):
-    """Add column of component IDs to network data"""
-    # get connected components
-    connected_parts = get_connected_components(network)
-    # add unique id to each graph
-    network.edges[id_col] = 0  # init id_col
-    network.nodes[id_col] = 0  # init id_col
+def add_component_ids(network: Network, id_col: str = "component_id") -> Network:
+    """Add column of connected component IDs to network edges and nodes"""
+
+    # get connected components in descending size order
+    connected_parts: list[set] = get_connected_components(network)
+
+    # init id_col
+    network.edges[id_col] = 0
+    network.nodes[id_col] = 0
+
+    # add unique id for each graph component
     for count, part in enumerate(connected_parts):
+
         # edges
-        network.edges.loc[
-            (network.edges.from_id.isin(list(part)))
-            | (network.edges.to_id.isin(list(part))),
-            id_col,
-        ] = (
-            count + 1
-        )
+        edge_mask = network.edges.from_id.isin(part).values
+        network.edges.loc[edge_mask, id_col] = count + 1
+
         # nodes
-        network.nodes.loc[(network.nodes.id.isin(list(part))), id_col] = count + 1
-    # return
+        node_mask = network.nodes.id.isin(part).values
+        network.nodes.loc[node_mask, id_col] = count + 1
+
     return network
