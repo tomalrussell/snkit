@@ -70,45 +70,42 @@ class Network:
             edges = GeoDataFrame(geometry=[])
         self.edges = edges
 
-    def set_crs(self, crs=None, epsg=None):
-        """Set network (node and edge) crs
+    def set_crs(self, crs=None, epsg=None, allow_override=False):
+        """Set the coordinate reference system (CRS) of the network nodes and
+        edges.
 
         Parameters
         ----------
-        crs : dict or str
-            Projection parameters as PROJ4 string or in dictionary form.
-        epsg : int
-            EPSG code specifying output projection
+        crs : pyproj.CRS, optional if epsg is specified
+            The value can be anything accepted by pyproj.CRS.from_user_input(),
+            such as an authority string (eg “EPSG:4326”) or a WKT string.
+        epsg : int, optional if crs is specified
+            EPSG code specifying output projection.
+        allow_override : bool, default False
+            If the nodes or edges GeoDataFrame already has a CRS, allow to
+            replace the existing CRS, even when both are not equal.
 
         """
-        if crs is None and epsg is None:
-            raise ValueError("Either crs or epsg must be provided to Network.set_crs")
-
-        if epsg is not None:
-            crs = {"init": "epsg:{}".format(epsg)}
-
-        self.edges.crs = crs
-        self.nodes.crs = crs
+        inplace = True
+        self.edges.set_crs(crs, epsg, inplace, allow_override)
+        self.nodes.set_crs(crs, epsg, inplace, allow_override)
 
     def to_crs(self, crs=None, epsg=None):
-        """Set network (node and edge) crs
+        """Transform network nodes and edges geometries to a new coordinate
+        reference system (CRS).
 
         Parameters
         ----------
-        crs : dict or str
-            Projection parameters as PROJ4 string or in dictionary form.
-        epsg : int
-            EPSG code specifying output projection
+        crs : pyproj.CRS, optional if epsg is specified
+            The value can be anything accepted by pyproj.CRS.from_user_input(),
+            such as an authority string (eg “EPSG:4326”) or a WKT string.
+        epsg : int, optional if crs is specified
+            EPSG code specifying output projection.
 
         """
-        if crs is None and epsg is None:
-            raise ValueError("Either crs or epsg must be provided to Network.set_crs")
-
-        if epsg is not None:
-            crs = {"init": "epsg:{}".format(epsg)}
-
-        self.edges.to_crs(crs, inplace=True)
-        self.nodes.to_crs(crs, inplace=True)
+        inplace = True
+        self.edges.to_crs(crs, epsg, inplace)
+        self.nodes.to_crs(crs, epsg, inplace)
 
 
 def add_ids(network, id_col="id", edge_prefix="edge", node_prefix="node"):
