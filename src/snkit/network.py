@@ -63,11 +63,11 @@ class Network:
     def __init__(self, nodes=None, edges=None):
         """ """
         if nodes is None:
-            nodes = GeoDataFrame()
+            nodes = GeoDataFrame(geometry=[])
         self.nodes = nodes
 
         if edges is None:
-            edges = GeoDataFrame()
+            edges = GeoDataFrame(geometry=[])
         self.edges = edges
 
     def set_crs(self, crs=None, epsg=None):
@@ -518,7 +518,9 @@ def matching_gdf_from_geoms(gdf, geoms):
     """Create a geometry-only GeoDataFrame with column name to match an existing GeoDataFrame"""
     geom_col = geometry_column_name(gdf)
     geom_arr = geoms_to_array(geoms)
-    return GeoDataFrame(geom_arr, columns=[geom_col])
+    matching_gdf = GeoDataFrame(geometry=geom_arr, crs=gdf.crs)
+    matching_gdf.geometry.name = geom_col
+    return matching_gdf
 
 
 def geoms_to_array(geoms):

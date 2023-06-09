@@ -27,7 +27,7 @@ def edge_only():
     |
     """
     edge = LineString([(0, 0), (0, 2)])
-    edges = GeoDataFrame([{"geometry": edge}])
+    edges = GeoDataFrame(geometry=[edge])
     return snkit.Network(edges=edges)
 
 
@@ -40,7 +40,7 @@ def nodes_only():
     """
     a = Point((0, 0))
     b = Point((0, 2))
-    nodes = GeoDataFrame([{"geometry": a}, {"geometry": b}])
+    nodes = GeoDataFrame(geometry=[a, b])
     return snkit.Network(nodes=nodes)
 
 
@@ -54,8 +54,8 @@ def connected():
     a = Point((0, 0))
     b = Point((0, 2))
     edge = LineString([a, b])
-    edges = GeoDataFrame([{"geometry": edge}])
-    nodes = GeoDataFrame([{"geometry": a}, {"geometry": b}])
+    edges = GeoDataFrame(geometry=[edge])
+    nodes = GeoDataFrame(geometry=[a, b])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -69,8 +69,8 @@ def misaligned():
     edge = LineString([(0, 0), (0, 2)])
     a = Point((0.5, 0))
     b = Point((-0.5, 2))
-    edges = GeoDataFrame([{"geometry": edge}])
-    nodes = GeoDataFrame([{"geometry": a}, {"geometry": b}])
+    edges = GeoDataFrame(geometry=[edge])
+    nodes = GeoDataFrame(geometry=[a, b])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -89,8 +89,8 @@ def unsplit():
     d = Point((1, 1))
     ab = LineString([a, b])
     cd = LineString([c, d])
-    edges = GeoDataFrame([ab, cd], columns=["geometry"])
-    nodes = GeoDataFrame([a, b, c, d], columns=["geometry"])
+    edges = GeoDataFrame(geometry=[ab, cd])
+    nodes = GeoDataFrame(geometry=[a, b, c, d])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -107,11 +107,11 @@ def split():
     b = Point((0, 2))
     c = Point((0, 1))
     d = Point((1, 1))
-    nodes = GeoDataFrame([a, b, c, d], columns=["geometry"])
+    nodes = GeoDataFrame(geometry=[a, b, c, d])
     ac = LineString([a, c])
     cb = LineString([c, b])
     cd = LineString([c, d])
-    edges = GeoDataFrame([ac, cb, cd], columns=["geometry"])
+    edges = GeoDataFrame(geometry=[ac, cb, cd])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -128,11 +128,11 @@ def split_with_ids():
     b = Point((0, 2))
     c = Point((0, 1))
     d = Point((1, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d], "id": ["a", "b", "c", "d"]})
+    nodes = GeoDataFrame(data={"id": ["a", "b", "c", "d"]}, geometry=[a, b, c, d])
     ac = LineString([a, c])
     cb = LineString([c, b])
     cd = LineString([c, d])
-    edges = GeoDataFrame(data={"geometry": [ac, cb, cd], "id": [1, 2, 3]})
+    edges = GeoDataFrame(data={"id": [1, 2, 3]}, geometry=[ac, cb, cd])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -149,10 +149,10 @@ def unsplit_intersection():
     b = Point((1, 2))
     c = Point((0, 1))
     d = Point((2, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d]})
+    nodes = GeoDataFrame(geometry=[a, b, c, d])
     ab = LineString([a, b])
     cd = LineString([c, d])
-    edges = GeoDataFrame(data={"geometry": [ab, cd]})
+    edges = GeoDataFrame(geometry=[ab, cd])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -170,12 +170,12 @@ def split_intersection():
     c = Point((0, 1))
     d = Point((2, 1))
     x = Point((1, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, x]})
+    nodes = GeoDataFrame(geometry=[a, b, c, d, x])
     ax = LineString([a, x])
     xb = LineString([x, b])
     cx = LineString([c, x])
     xd = LineString([x, d])
-    edges = GeoDataFrame(data={"geometry": [ax, xb, cx, xd]})
+    edges = GeoDataFrame(geometry=[ax, xb, cx, xd])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -194,11 +194,11 @@ def unsplit_multiple_intersections():
     d = Point((3, 1))
     e = Point((2, 0))
     f = Point((2, 2))
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f]})
+    nodes = GeoDataFrame(geometry=[a, b, c, d, e, f])
     ab = LineString([a, b])
     cd = LineString([c, d])
     ef = LineString([e, f])
-    edges = GeoDataFrame(data={"geometry": [ab, cd, ef]})
+    edges = GeoDataFrame(geometry=[ab, cd, ef])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -219,7 +219,7 @@ def split_multiple_intersections():
     f = Point((2, 2))
     x = Point((1, 1))
     y = Point((2, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f, x, y]})
+    nodes = GeoDataFrame(geometry=[a, b, c, d, e, f, x, y])
     ax = LineString([a, x])
     xb = LineString([x, b])
     cx = LineString([c, x])
@@ -227,7 +227,7 @@ def split_multiple_intersections():
     yd = LineString([y, d])
     ey = LineString([e, y])
     yf = LineString([y, f])
-    edges = GeoDataFrame(data={"geometry": [ax, xb, cx, xy, yd, ey, yf]})
+    edges = GeoDataFrame(geometry=[ax, xb, cx, xy, yd, ey, yf])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -246,10 +246,10 @@ def unsplit_overlapping_lines():
     d = Point((2, 2))
     # x is just a construction point
     x = Point((1, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d]})
+    nodes = GeoDataFrame(geometry=[a, b, c, d])
     ac = LineString([a, c])
     bd = LineString([b, x, c, d])
-    edges = GeoDataFrame(data={"geometry": [ac, bd]})
+    edges = GeoDataFrame(geometry=[ac, bd])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -267,13 +267,13 @@ def split_overlapping_lines():
     c = Point((1, 2))
     d = Point((2, 2))
     x = Point((1, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, x]})
+    nodes = GeoDataFrame(geometry=[a, b, c, d, x])
     ax = LineString([a, x])
     bx = LineString([b, x])
     xc = LineString([x, c])
     cd = LineString([c, d])
     # note that there are two edges 'xc'
-    edges = GeoDataFrame(data={"geometry": [ax, xc, bx, xc, cd]})
+    edges = GeoDataFrame(geometry=[ax, xc, bx, xc, cd])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -296,10 +296,10 @@ def unsplit_heterogeneous_intersection():
     d = Point((3, 1))
     e = Point((0, 1))
     f = Point((4, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f]})
+    nodes = GeoDataFrame(geometry=[a, b, c, d, e, f])
     ad = LineString([a, b, c, y, d])
     ef = LineString([e, f])
-    edges = GeoDataFrame(data={"geometry": [ad, ef]})
+    edges = GeoDataFrame(geometry=[ad, ef])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -321,7 +321,7 @@ def split_heterogeneous_intersection():
     x = Point((1, 1))
     y = Point((2, 1))
     # note: this is order sensitive although it shouldn't matter
-    nodes = GeoDataFrame(data={"geometry": [a, b, c, d, e, f, y, x]})
+    nodes = GeoDataFrame(geometry=[a, b, c, d, e, f, y, x])
     ax = LineString([a, x])
     xb = LineString([x, b])
     bc = LineString([b, c])
@@ -331,7 +331,7 @@ def split_heterogeneous_intersection():
     xy = LineString([x, y])
     df = LineString([d, f])
     # note that there are two edges 'yd'
-    edges = GeoDataFrame(data={"geometry": [ax, xb, bc, cy, yd, ex, xy, yd, df]})
+    edges = GeoDataFrame(geometry=[ax, xb, bc, cy, yd, ex, xy, yd, df])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -350,9 +350,9 @@ def unsplit_self_intersection():
     b = Point((1, 2))
     c = Point((2, 2))
     d = Point((2, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, e]})
+    nodes = GeoDataFrame(geometry=[a, e])
     ae = LineString([a, b, c, d, e])
-    edges = GeoDataFrame(data={"geometry": [ae]})
+    edges = GeoDataFrame(geometry=[ae])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -372,11 +372,11 @@ def split_self_intersection():
     b = Point((1, 2))
     c = Point((2, 2))
     d = Point((2, 1))
-    nodes = GeoDataFrame(data={"geometry": [a, e, x]})
+    nodes = GeoDataFrame(geometry=[a, e, x])
     ax = LineString([a, x])
     xx = LineString([x, b, c, d, x])
     xe = LineString([x, e])
-    edges = GeoDataFrame(data={"geometry": [ax, xx, xe]})
+    edges = GeoDataFrame(geometry=[ax, xx, xe])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -393,10 +393,10 @@ def gap():
     b = Point((0, 2))
     c = Point((0.1, 1))
     d = Point((1, 1))
-    nodes = GeoDataFrame([a, b, c, d], columns=["geometry"])
+    nodes = GeoDataFrame(geometry=[a, b, c, d])
     ab = LineString([a, b])
     cd = LineString([c, d])
-    edges = GeoDataFrame([ab, cd], columns=["geometry"])
+    edges = GeoDataFrame(geometry=[ab, cd])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -414,12 +414,12 @@ def bridged():
     c = Point((0.1, 1))
     d = Point((1, 1))
     e = Point((0, 1))
-    nodes = GeoDataFrame([a, b, c, d, e], columns=["geometry"])
+    nodes = GeoDataFrame(geometry=[a, b, c, d, e])
     ae = LineString([a, e])
     eb = LineString([e, b])
     cd = LineString([c, d])
     ce = LineString([c, e])
-    edges = GeoDataFrame([ae, eb, cd, ce], columns=["geometry"])
+    edges = GeoDataFrame(geometry=[ae, eb, cd, ce])
     return snkit.Network(edges=edges, nodes=nodes)
 
 
@@ -437,11 +437,11 @@ def two_components(gap):
     c = Point((1, 1))
     d = Point((2, 1))
     e = Point((3, 1))
-    nodes = GeoDataFrame([a, b, c, d, e], columns=["geometry"])
+    nodes = GeoDataFrame(geometry=[a, b, c, d, e])
     ab = LineString([a, b])
     cd = LineString([c, d])
     de = LineString([d, e])
-    edges = GeoDataFrame([ab, cd, de], columns=["geometry"])
+    edges = GeoDataFrame(geometry=[ab, cd, de])
     network = snkit.Network(edges=edges, nodes=nodes)
     network = snkit.network.add_ids(network)
     network = snkit.network.add_topology(network)
@@ -723,7 +723,8 @@ def test_passing_slice():
     ac = LineString([a, c])
     cb = LineString([c, b])
     cd = LineString([c, d])
-    edges = GeoDataFrame([ac, cb, cd], columns=["geometry"])
+    edges = GeoDataFrame(geometry=[ac, cb, cd])
+
     network = snkit.Network(edges=edges[1:])
     with_endpoints = snkit.network.add_endpoints(network)
     with_ids = snkit.network.add_ids(with_endpoints)
@@ -745,9 +746,7 @@ def test_drop_duplicate_geometries():
     cb = LineString([c, b])
     # use an index that doesn't start from 0 to check our indexing hygiene
     index = pd.Index([2, 3, 5, 7, 11, 13])
-    gdf_with_dupes = GeoDataFrame(
-        index=index, data=[a, a, b, ac, ac, cb], columns=["geometry"]
-    )
+    gdf_with_dupes = GeoDataFrame(index=index, geometry=[a, a, b, ac, ac, cb])
     deduped = snkit.network.drop_duplicate_geometries(gdf_with_dupes)
     # we should have just the first of each duplicate item
     assert (deduped.index == pd.Index([2, 5, 7, 13])).all()
@@ -771,3 +770,13 @@ def test_to_networkx(connected):
 def test_add_component_ids(two_components):
     labelled = snkit.network.add_component_ids(two_components)
     assert all(labelled.edges.component_id == pd.Series([2, 1, 1]))
+
+
+def test_matching_gdf_from_geoms(edge_only):
+    expected = edge_only.edges.copy()
+    gdf = edge_only.edges.copy()
+    geoms = gdf.geometry
+    gdf["a"] = range(len(gdf))
+    gdf["b"] = "abc"
+    actual = snkit.network.matching_gdf_from_geoms(gdf, geoms)
+    assert_frame_equal(actual, expected)
