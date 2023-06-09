@@ -40,6 +40,12 @@ if "SNKIT_PROGRESS" in os.environ and os.environ["SNKIT_PROGRESS"] in ("1", "TRU
 else:
     from snkit.utils import tqdm_standin as tqdm
 
+if "SNKIT_PARALLEL" in os.environ and os.environ["SNKIT_PARALLEL"] in ("1", "TRUE"):
+    PARALLEL = True
+    import multiprocessing
+else:
+    PARALLEL = False
+
 
 class Network:
     """A Network is composed of nodes (points in space) and edges (lines)
@@ -254,18 +260,48 @@ def snap_nodes(network, threshold=None):
     return Network(nodes=nodes, edges=network.edges)
 
 
-def split_edges_at_nodes(network, tolerance=1e-9):
-    """Split network edges where they intersect node geometries"""
+def _split_edges_at_nodes(edges: GeoDataFrame, nodes: GeoDataFrame, tolerance: float) -> list:
+    """Split edges at nodes for a network chunk"""
     split_edges = []
-    for edge in tqdm(
-        network.edges.itertuples(index=False), desc="split", total=len(network.edges)
-    ):
-        hits = nodes_intersecting(edge.geometry, network.nodes, tolerance)
+
+    for edge in edges.itertuples():
+        hits = nodes_intersecting(edge.geometry, nodes, tolerance)
         split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
 
         # potentially split to multiple edges
         edges = split_edge_at_points(edge, split_points, tolerance)
         split_edges.append(edges)
+
+    return split_edges
+
+
+def split_edges_at_nodes(network, tolerance=1e-9):
+    """Split network edges where they intersect node geometries"""
+    split_edges = []
+
+    n = len(network.edges)
+    if PARALLEL and (n > 10_000):
+        chunk_size = int(n / os.cpu_count())
+        args = [
+            (network.edges.iloc[i: i + chunk_size, :], network.nodes, tolerance)
+            for i in range(0, n, chunk_size)
+        ]
+        with multiprocessing.Pool() as pool:
+            results = pool.starmap(_split_edges_at_nodes, args)
+
+        # flatten return list
+        split_edges: list = [df for chunk in results for df in chunk]
+
+    else:
+        for edge in tqdm(
+            network.edges.itertuples(index=False), desc="split", total=len(network.edges)
+        ):
+            hits = nodes_intersecting(edge.geometry, network.nodes, tolerance)
+            split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
+
+            # potentially split to multiple edges
+            edges = split_edge_at_points(edge, split_points, tolerance)
+            split_edges.append(edges)
 
     # combine dfs
     edges = pandas.concat(split_edges, axis=0)
@@ -369,7 +405,11 @@ def link_nodes_to_nearest_edge(network, condition=None):
 
     # split edges as necessary after new node creation
     unsplit = Network(nodes=all_nodes, edges=all_edges)
-    return split_edges_at_nodes(unsplit)
+
+    # this step is typically the majority of processing time
+    split = split_edges_at_nodes(unsplit)
+
+    return split
 
 
 def merge_edges(network, id_col="id", by=None):
