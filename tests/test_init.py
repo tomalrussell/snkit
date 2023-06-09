@@ -455,6 +455,14 @@ def test_init():
     assert len(net.edges) == 0
 
 
+def test_roundtrip(connected, tmp_path):
+    """Should write and read back a network"""
+    connected.to_file(tmp_path / "connected.gpkg", driver="GPKG")
+    actual = snkit.network.read_file(tmp_path / "connected.gpkg")
+    assert_frame_equal(actual.nodes, connected.nodes)
+    assert_frame_equal(actual.edges, connected.edges)
+
+
 def test_round_geometries(misaligned, connected):
     """Should round coordinates to some tolerance"""
     rounded = snkit.network.round_geometries(misaligned, precision=0)

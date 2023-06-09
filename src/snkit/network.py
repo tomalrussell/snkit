@@ -107,6 +107,50 @@ class Network:
         self.edges.to_crs(crs, epsg, inplace)
         self.nodes.to_crs(crs, epsg, inplace)
 
+    def to_file(self, filename, nodes_layer="nodes", edges_layer="edges", **kwargs):
+        """Write nodes and edges to a geographic data file with layers.
+
+        Any additional keyword arguments are passed through to `geopandas.GeoDataFrame.to_file`.
+
+        Parameters
+        ----------
+        filename : str
+            Path to geographic data file with layers
+        nodes_layer : str, optional, default 'nodes'
+            Layer name for nodes.
+        edges_layer : str, optional, default 'edges'
+            Layer name for edges.
+        """
+        self.nodes.to_file(filename, layer=nodes_layer, **kwargs)
+        self.edges.to_file(filename, layer=edges_layer, **kwargs)
+
+
+def read_file(filename, nodes_layer="nodes", edges_layer="edges", **kwargs):
+    """Read a geographic data file with layers containing nodes and edges.
+
+    Any additional keyword arguments are passed through to `geopandas.read_file`.
+
+    Parameters
+    ----------
+    filename : str
+        Path to geographic data file with layers
+    nodes_layer : str, optional, default 'nodes'
+        Layer name for nodes, or None if nodes should not be read.
+    edges_layer : str, optional, default 'edges'
+        Layer name for edges, or None if edges should not be read.
+    """
+    if nodes_layer is not None:
+        nodes = geopandas.read_file(filename, layer=nodes_layer, **kwargs)
+    else:
+        nodes = None
+
+    if edges_layer is not None:
+        edges = geopandas.read_file(filename, layer=edges_layer, **kwargs)
+    else:
+        edges = None
+
+    return Network(nodes, edges)
+
 
 def add_ids(network, id_col="id", edge_prefix="edge", node_prefix="node"):
     """Add or replace an id column with ascending ids"""
