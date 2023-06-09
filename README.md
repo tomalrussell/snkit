@@ -11,7 +11,6 @@
 /ˈsnɪkɪt/ – sounds like [snicket](https://en.oxforddictionaries.com/definition/snicket) (noun,
 Northern English) A narrow passage between houses; an alleyway.
 
-
 ## Why use snkit?
 
 `snkit` helps tidy spatial network data.
@@ -25,11 +24,11 @@ For example:
 ![Unconnected network](docs/source/_static/unconnected-network.png)
 
 `snkit` has methods to:
+
 - add endpoints to each edge
 - connect nodes to nearest edges
 - split edges at connecting points
 - create node and edge ids, and add from_id and to_id to each edge
-
 
 ### Spatial network
 
@@ -37,24 +36,21 @@ The output of a snkit data cleaning process might look something like this:
 
 ![Connected network](docs/source/_static/connected-network.png)
 
-
 #### Nodes
 
-geometry | id | other attributes...
----------|----|--
-`POINT (0.03 0.04)` | node_0 | ...
-`POINT (0.03 0.03)` | node_1 | ...
-`POINT (0.02 0.03)` | node_2 | ...
-
+| geometry            | id     | other attributes... |
+| ------------------- | ------ | ------------------- |
+| `POINT (0.03 0.04)` | node_0 | ...                 |
+| `POINT (0.03 0.03)` | node_1 | ...                 |
+| `POINT (0.02 0.03)` | node_2 | ...                 |
 
 #### Edges
 
-geometry | id | from_id | to_id | other attributes...
----------|----|---------|-------| --
-`LINESTRING (0.04 -0.04...` | edge_0 | node_10 | node_22 | ...
-`LINESTRING (0.01 -0.03...` | edge_1 | node_22 | node_21 | ...
-`LINESTRING (0.02 -0.02...` | edge_2 | node_21 | node_25 | ...
-
+| geometry                    | id     | from_id | to_id   | other attributes... |
+| --------------------------- | ------ | ------- | ------- | ------------------- |
+| `LINESTRING (0.04 -0.04...` | edge_0 | node_10 | node_22 | ...                 |
+| `LINESTRING (0.01 -0.03...` | edge_1 | node_22 | node_21 | ...                 |
+| `LINESTRING (0.02 -0.02...` | edge_2 | node_21 | node_25 | ...                 |
 
 ## Getting started
 
@@ -89,13 +85,11 @@ Run the tests:
 
     python -m pytest tests/
 
-
 ## Testimonials 💯 👍 😊
 
 > With five lines of snkit I replaced four or five hundred lines of custom code!
 
 A. Contented Customer (@czor847)
-
 
 ## Related projects
 
@@ -104,7 +98,6 @@ A. Contented Customer (@czor847)
 - [`osmnx`](https://osmnx.readthedocs.io/en/stable/) lets you retrieve, model, analyze, and
   visualize street networks from OpenStreetMap, including methods to correct and simplify
   network topology.
-
 
 ## Acknowledgements
 
