@@ -1,11 +1,6 @@
 """Test core objects/concepts
 """
-# pylint: disable=C0103
-import warnings
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from geopandas import GeoDataFrame
+from geopandas import GeoDataFrame
 
 import pandas as pd
 from pandas.testing import assert_frame_equal

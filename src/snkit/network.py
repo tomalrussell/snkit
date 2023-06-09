@@ -3,10 +3,7 @@
 import os
 import warnings
 
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    import geopandas
-
+import geopandas
 import numpy as np
 import pandas
 import shapely.errors
@@ -160,7 +157,7 @@ def get_endpoints(network):
     ):
         if edge.geometry is None:
             continue
-        if edge.geometry.geometryType() == "MultiLineString":
+        if edge.geometry.geom_type == "MultiLineString":
             for line in edge.geometry.geoms:
                 start, end = line_endpoints(line)
                 endpoints.append(start)
@@ -531,14 +528,7 @@ def matching_gdf_from_geoms(gdf, geoms):
 
 def geoms_to_array(geoms):
     geom_arr = np.empty(len(geoms), dtype="object")
-
-    # Filter warnings until Shapely 2.0
-    # see https://shapely.readthedocs.io/en/stable/migration.html
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", category=shapely.errors.ShapelyDeprecationWarning
-        )
-        geom_arr[:] = geoms
+    geom_arr[:] = geoms
 
     return geom_arr
 
@@ -562,13 +552,9 @@ def node_connectivity_degree(node, network):
 
 def drop_duplicate_geometries(gdf, keep="first"):
     """Drop duplicate geometries from a dataframe"""
-
-    # convert to wkb so drop_duplicates will work
+    # as of geopandas ~0.6 this should work without explicit conversion to wkb
     # discussed in https://github.com/geopandas/geopandas/issues/521
-    mask = gdf.geometry.apply(lambda geom: geom.wkb).drop_duplicates(keep=keep).index
-
-    # use mask to drop from actual dataframe
-    return gdf.loc[mask]
+    return gdf.drop_duplicates([gdf.geometry.name])
 
 
 def nearest_point_on_edges(point, edges):
@@ -590,8 +576,17 @@ def nearest_edge(point, edges):
 
 def nearest(geom, gdf):
     """Find the element of a GeoDataFrame nearest a shapely geometry"""
-    match_idx = gdf.sindex.nearest(geom, return_all=False)[1][0]
-    return gdf.loc[match_idx]
+    try:
+        match_idx = gdf.sindex.nearest(geom, return_all=False)[1][0]
+        return gdf.loc[match_idx]
+    except TypeError:
+        warnings.warn("Falling back to RTree index method for nearest element")
+        matches_idx = gdf.sindex.nearest(geom.bounds)
+        nearest_geom = min(
+            [gdf.iloc[match_idx] for match_idx in matches_idx],
+            key=lambda match: geom.distance(match.geometry),
+        )
+        return nearest_geom
 
 
 def edges_within(point, edges, distance):

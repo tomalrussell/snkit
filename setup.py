@@ -46,15 +46,15 @@ setup(
     setup_requires=["setuptools_scm"],
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        "geopandas>=0.10",
-        "pygeos>=0.12",
+        "geopandas>=0.13",
+        "shapely>=2.0",
     ],
     extras_require={
         "dev": ["black", "nbstripout", "pytest", "pytest-cov"],
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
-        "networkx": ["networkx>=1.9"],
+        "networkx": ["networkx>=3.0"],
     },
     entry_points={
         "console_scripts": [

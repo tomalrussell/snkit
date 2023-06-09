@@ -1,11 +1,10 @@
 # requirements
-geopandas>=0.10
-pygeos>=0.12
-networkx>=1.9
+geopandas>=0.13
+networkx>=3.0
+shapely>=2.0
 
 # test/lint
 black
 nbstripout
 pytest
 pytest-cov
-networkx>=1.9
