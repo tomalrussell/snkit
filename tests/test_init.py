@@ -746,9 +746,7 @@ def test_drop_duplicate_geometries():
     # use an index that doesn't start from 0 to check our indexing hygiene
     index = pd.Index([2, 3, 5, 7, 11, 13])
     gdf_with_dupes = GeoDataFrame(
-        index=index,
-        data=[a, a, b, ac, ac, cb],
-        columns=["geometry"]
+        index=index, data=[a, a, b, ac, ac, cb], columns=["geometry"]
     )
     deduped = snkit.network.drop_duplicate_geometries(gdf_with_dupes)
     # we should have just the first of each duplicate item

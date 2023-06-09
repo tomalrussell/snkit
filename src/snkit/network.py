@@ -37,6 +37,7 @@ if "SNKIT_PROGRESS" in os.environ and os.environ["SNKIT_PROGRESS"] in ("1", "TRU
 else:
     from snkit.utils import tqdm_standin as tqdm
 
+# optional parallel processing
 if "SNKIT_PARALLEL" in os.environ and os.environ["SNKIT_PARALLEL"] in ("1", "TRUE"):
     PARALLEL = True
     import multiprocessing
@@ -203,7 +204,7 @@ def split_multilinestrings(network):
     split_edges = edges.explode(column=geom_col, ignore_index=True)
 
     geo_types = set(split_edges.geom_type)
-    if geo_types != {'LineString'}:
+    if geo_types != {"LineString"}:
         raise ValueError(
             f"exploded edges are of type(s) {geo_types} but should only be LineString"
         )
@@ -251,17 +252,19 @@ def snap_nodes(network, threshold=None):
             ],
             axis=1,
         ),
-        crs=network.nodes.crs
+        crs=network.nodes.crs,
     )
 
     return Network(nodes=nodes, edges=network.edges)
 
 
-def _split_edges_at_nodes(edges: GeoDataFrame, nodes: GeoDataFrame, tolerance: float) -> list:
+def _split_edges_at_nodes(
+    edges: GeoDataFrame, nodes: GeoDataFrame, tolerance: float
+) -> list:
     """Split edges at nodes for a network chunk"""
     split_edges = []
 
-    for edge in edges.itertuples():
+    for edge in edges.itertuples(index=False):
         hits = nodes_intersecting(edge.geometry, nodes, tolerance)
         split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
 
@@ -280,7 +283,7 @@ def split_edges_at_nodes(network, tolerance=1e-9):
     if PARALLEL and (n > 10_000):
         chunk_size = int(n / os.cpu_count())
         args = [
-            (network.edges.iloc[i: i + chunk_size, :], network.nodes, tolerance)
+            (network.edges.iloc[i : i + chunk_size, :], network.nodes, tolerance)
             for i in range(0, n, chunk_size)
         ]
         with multiprocessing.Pool() as pool:
@@ -290,15 +293,7 @@ def split_edges_at_nodes(network, tolerance=1e-9):
         split_edges: list = [df for chunk in results for df in chunk]
 
     else:
-        for edge in tqdm(
-            network.edges.itertuples(index=False), desc="split", total=len(network.edges)
-        ):
-            hits = nodes_intersecting(edge.geometry, network.nodes, tolerance)
-            split_points = MultiPoint([hit.geometry for hit in hits.itertuples()])
-
-            # potentially split to multiple edges
-            edges = split_edge_at_points(edge, split_points, tolerance)
-            split_edges.append(edges)
+        split_edges = _split_edges_at_nodes(network.edges, network.nodes, tolerance)
 
     # combine dfs
     edges = pandas.concat(split_edges, axis=0)
@@ -874,7 +869,6 @@ def add_component_ids(network: Network, id_col: str = "component_id") -> Network
 
     # add unique id for each graph component
     for count, part in enumerate(connected_parts):
-
         # edges
         edge_mask = network.edges.from_id.isin(part).values
         network.edges.loc[edge_mask, id_col] = count + 1
