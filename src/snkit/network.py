@@ -711,8 +711,10 @@ def split_edge_at_points(edge, points, tolerance=1e-9):
     """Split edge at point/multipoint"""
     try:
         segments = split_line(edge.geometry, points, tolerance)
-    except ValueError:
-        # if splitting fails, e.g. because points is empty GeometryCollection
+    except (ValueError, shapely.errors.GeometryTypeError):
+        # GeometryTypeError derives from ShapelyError and not TypeError or
+        # ValueError since Shapely 2.0. May be raised if splitting fails, e.g.
+        # because points is an empty GeometryCollection
         segments = [edge.geometry]
     edges = GeoDataFrame([edge] * len(segments))
     edges.geometry = segments
