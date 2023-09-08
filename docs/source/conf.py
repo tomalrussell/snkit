@@ -30,8 +30,6 @@ class Mock(MagicMock):
 
 mock_modules = [
     "geopandas",
-    "numpy",
-    "pandas",
     "shapely",
     "shapely.errors",
     "shapely.geometry",
