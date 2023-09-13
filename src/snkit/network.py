@@ -2,6 +2,7 @@
 """
 import logging
 import os
+from typing import Optional
 import warnings
 
 import geopandas
@@ -326,7 +327,7 @@ def _split_edges_at_nodes(
     return split_edges
 
 
-def split_edges_at_nodes(network: Network, tolerance: float = 1e-9, chunk_size: int | None = None):
+def split_edges_at_nodes(network: Network, tolerance: float = 1e-9, chunk_size: Optional[int] = None):
     """
     Split network edges where they intersect node geometries.
 
