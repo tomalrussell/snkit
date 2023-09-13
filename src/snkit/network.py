@@ -29,9 +29,6 @@ from shapely.ops import split, linemerge, unary_union
 
 from collections import Counter
 
-# configure logging with a timestamp and process id prefix
-logging.basicConfig(format="%(asctime)s %(process)s %(message)s", level=logging.INFO)
-
 # optional progress bars
 if "SNKIT_PROGRESS" in os.environ and os.environ["SNKIT_PROGRESS"] in ("1", "TRUE"):
     try:
