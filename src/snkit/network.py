@@ -326,18 +326,30 @@ def _split_edges_at_nodes(
     return split_edges
 
 
-def split_edges_at_nodes(network, tolerance=1e-9):
+def split_edges_at_nodes(network: Network, tolerance: float = 1e-9, chunk_size: int | None = None):
     """
-    Split network edges where they intersect node geometries. Will operate in
-    parallel if SNKIT_PROCESSES is in the environment and a positive integer.
+    Split network edges where they intersect node geometries.
+
+    N.B. Can operate in parallel if SNKIT_PROCESSES is in the environment and a
+    positive integer.
+
+    Args:
+        network: Network object to split edges for.
+        tolerance: Proximity within which nodes are said to intersect an edge.
+        chunk_size: When splitting in parallel, set the number of edges per
+            unit of work.
+
+    Returns:
+        Network with edges split at nodes (within proximity tolerance).
     """
     split_edges = []
 
     n = len(network.edges)
-    if PARALLEL_PROCESS_COUNT and (n > 1_000):
-        chunk_size = max([1, int(n / PARALLEL_PROCESS_COUNT)])
+    if PARALLEL_PROCESS_COUNT > 1:
+        if chunk_size is None:
+            chunk_size = max([1, int(n / PARALLEL_PROCESS_COUNT)])
         args = [
-            (network.edges.iloc[i : i + chunk_size, :], network.nodes, tolerance)
+            (network.edges.iloc[i: i + chunk_size, :], network.nodes, tolerance)
             for i in range(0, n, chunk_size)
         ]
         with multiprocessing.Pool(PARALLEL_PROCESS_COUNT) as pool:
