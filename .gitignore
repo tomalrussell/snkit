@@ -11,6 +11,10 @@
 build
 dist
 
+# rust
+target
+*.so
+
 docs/source/api/*
 
 # data

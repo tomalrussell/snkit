@@ -76,14 +76,37 @@ Clone this repository:
 
     git clone git@github.com:tomalrussell/snkit.git
 
-Maybe set up a virtualenv or conda environment, as you wish. Then install `snkit` in editable
-mode, with development packages:
+Maybe set up a virtualenv or conda environment, as you wish.
 
-    pip install -e .[dev]
+For example, using
+[`micromamba`](https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html)
+to create an environment with all dependencies:
+
+```bash
+micromamba create -n snkit python=3.11 \
+    "geopandas>=0.13" \
+    "shapely>=2.0" \
+    "networkx>=3.0" \
+    "maturin>=1.2,<2.0" \
+    pytest \
+    pytest-cov \
+    black \
+    nbstripout
+micromamba activate snkit
+```
+
+For reference, [`maturin`](https://www.maturin.rs) is used to build the rust
+extension module `snkit.core`. The rust-Python bindings are created using
+[`PyO3`](https://pyo3.rs/). The project is currently laid out with the rust
+source code in `rust/src` and Python in `src/snkit`.
+
+Install `snkit` in editable mode, with development packages:
+
+    maturin develop --extras=dev,networkx
 
 Run the tests:
 
-    python -m pytest tests/
+    python -m pytest
 
 ## Testimonials 💯 👍 😊
 

@@ -1,4 +1,40 @@
-[tool.pytest.ini_options]
-pythonpath = [
-    "src",
+[project]
+name = "snkit"
+description = "a spatial networks toolkit"
+dynamic = ["version"]
+readme = "README.md"
+authors = [{ name = "Tom Russell", email = "tomalrussell@gmail.com" }]
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Utilities",
 ]
+dependencies = ["geopandas>=0.13", "shapely>=2.0"]
+
+[project.optional-dependencies]
+"dev" = ["black", "nbstripout", "pytest", "pytest-cov"]
+"networkx" = ["networkx>=3.0"]
+
+[project.urls]
+Homepage = "https://github.com/tomalrussell/snkit"
+Documentation = "https://snkit.readthedocs.io/en/latest/"
+
+[build-system]
+requires = ["maturin>=1.2,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "src"
+module-name = "snkit.core"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
