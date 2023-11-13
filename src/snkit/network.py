@@ -279,16 +279,23 @@ def round_geometries(network: Network, precision: int = 3) -> Network:
     return network
 
 
-def split_multilinestrings(network: Network) -> Network:
+def split_multilinestrings(network: Network, merge_parts: bool = False) -> Network:
     """
     Create multiple edges from any MultiLineString edge
 
     Ensures that edge geometries are all LineStrings, duplicates attributes
     over any created multi-edges.
+
+    Parameters
+    ----------
+    merge_parts : default False
+        Merge parts of geometries if they are connected, before splitting to multiple edges
     """
 
     edges = network.edges
     geom_col: str = geometry_column_name(edges)
+    if merge_parts:
+        edges.geometry = edges.geometry.apply(merge_multilinestring)
     split_edges = edges.explode(column=geom_col, ignore_index=True)
 
     geo_types = set(split_edges.geom_type)

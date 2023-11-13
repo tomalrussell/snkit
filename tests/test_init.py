@@ -642,7 +642,7 @@ def test_split_multilinestrings():
     mls_coords = [
         (
             (0, 0),
-            (0, 1),
+            (0, 1.1),
         ),
         (
             (1, 1),
@@ -679,6 +679,64 @@ def test_split_multilinestrings():
 
     # check everything is reindexed
     assert list(split_network.edges.index.values) == list(range(4))
+
+
+def test_split_multilinestrings_merge():
+    """Explode multilinestrings into linestrings - with parts merged if possible"""
+
+    # point coordinates comprising three linestrings
+    mls_coords = [
+        (
+            (0, 0),
+            (0, 1),  # should link to third part
+        ),
+        (
+            (1, 1),
+            (2, 2),
+            (2, 1),
+        ),
+        (
+            (0, 1),  # should merge with first part
+            (-1, 1),
+            (-1, 2),
+            (-1, 0),
+        ),
+    ]
+    # point coordsinate comprising a single linestring
+    ls_coords = [(4, 0), (4, 1), (4, 2)]
+
+    # make input network edges
+    edges = GeoDataFrame(
+        {
+            "data": ["MLS", "LS"],
+            "geometry": [MultiLineString(mls_coords), LineString(ls_coords)],
+        }
+    )
+    multi_network = snkit.network.Network(edges=edges)
+    # check we have two rows (multilinestring and linestring) in the input network
+    assert len(multi_network.edges) == 2
+
+    # split and check we have three rows (the resulting linestrings) in the output network
+    split_network = snkit.network.split_multilinestrings(multi_network)
+    assert len(split_network.edges) == 4
+
+    # check data is replicated from multilinestring to child linestrings
+    assert list(split_network.edges["data"].values) == ["MLS"] * 3 + ["LS"]
+
+    # check everything is reindexed
+    assert list(split_network.edges.index.values) == list(range(4))
+
+    # Check again, with merge_parts
+    split_network_merged = snkit.network.split_multilinestrings(
+        multi_network, merge_parts=True
+    )
+    assert len(split_network_merged.edges) == 3
+
+    # check data is replicated from multilinestring to child linestrings
+    assert list(split_network_merged.edges["data"].values) == ["MLS"] * 2 + ["LS"]
+
+    # check everything is reindexed
+    assert list(split_network_merged.edges.index.values) == list(range(3))
 
 
 def test_link_nodes_to_edges_within(gap, bridged):
