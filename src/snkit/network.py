@@ -9,6 +9,7 @@ import warnings
 
 import geopandas
 import numpy as np
+import numpy.typing as npt
 import pandas
 import pyproj
 import shapely.errors
@@ -643,7 +644,7 @@ def matching_gdf_from_geoms(gdf: GeoDataFrame, geoms: List[Geometry]) -> GeoData
 
 def geoms_to_array(
     geoms: List[Geometry],
-) -> np.ndarray[List[int], Geometry]:
+) -> npt.ArrayLike:
     geom_arr = np.empty(len(geoms), dtype="object")
     geom_arr[:] = geoms
 
@@ -867,7 +868,7 @@ def split_line(
     line: LineString,
     points: Union[Point, MultiPoint],
     tolerance: Optional[Number] = 1e-9,
-) -> list[LineString]:
+) -> List[LineString]:
     """Split line at point or multipoint, within some tolerance"""
     to_split = snap_line(line, points, tolerance)
     # when the splitter is a self-intersection point, shapely splits in
@@ -881,7 +882,9 @@ def split_line(
 
 
 def snap_line(
-    line: LineString, points: Point | MultiPoint, tolerance: Optional[Number] = 1e-9
+    line: LineString,
+    points: Union[Point, MultiPoint],
+    tolerance: Optional[Number] = 1e-9,
 ) -> LineString:
     """Snap a line to points within tolerance, inserting vertices as necessary"""
     if points.geom_type == "Point":
@@ -958,7 +961,7 @@ def set_precision(geom: Geometry, precision: int) -> Geometry:
 
 def to_networkx(
     network: Network, directed: bool = False, weight_col: Optional[str] = None
-) -> nx.Graph | nx.DiGraph:
+) -> Union[nx.Graph, nx.DiGraph]:
     """Return a networkx graph"""
     if not USE_NX:
         raise ImportError("No module named networkx")
