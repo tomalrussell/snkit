@@ -1,6 +1,6 @@
 """snkit - a spatial networks toolkit
 """
-import pkg_resources
+from importlib.metadata import version, PackageNotFoundError
 
 # Define what is accessible directly on snkit, when a client writes::
 #   from snkit import Network
@@ -12,8 +12,8 @@ __license__ = "mit"
 
 
 try:
-    __version__ = pkg_resources.get_distribution(__name__).version
-except pkg_resources.DistributionNotFound:
+    __version__ = version(__name__)
+except (PackageNotFoundError, ValueError):
     __version__ = "unknown"
 
 
