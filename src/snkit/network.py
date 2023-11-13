@@ -315,7 +315,7 @@ def merge_multilinestring(geom: Geometry) -> Geometry:
                 return geom_inb
         else:
             return geom
-    except:
+    except Exception:
         return GeometryCollection()
 
 
