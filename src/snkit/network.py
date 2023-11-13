@@ -786,7 +786,7 @@ def _intersects(
         buf = geom
     try:
         return _intersects_gdf(buf, gdf)
-    except shapely.errors.TopologicalError:
+    except (shapely.errors.TopologicalError, shapely.errors.GEOSException):
         # can exceptionally buffer to an invalid geometry, so try re-buffering
         buf = buf.buffer(0)
         return _intersects_gdf(buf, gdf)
