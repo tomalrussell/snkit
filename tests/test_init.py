@@ -846,3 +846,31 @@ def test_matching_gdf_from_geoms(edge_only):
     gdf["b"] = "abc"
     actual = snkit.network.matching_gdf_from_geoms(gdf, geoms)
     assert_frame_equal(actual, expected)
+
+
+def test_nearest():
+    a = Point((0, 0))
+    b = Point((0, 2))
+    c = Point((0, 1))
+    d = Point((1, 1))
+    ab = LineString([a, b])
+    cd = LineString([c, d])
+    gdf = GeoDataFrame(geometry=[ab, cd])
+
+    # default RangeIndex
+    actual = snkit.network.nearest(Point(0.1, -0.1), gdf)
+    assert actual.geometry == LineString([Point(0, 0), Point(0, 2)])
+
+    # set integer index, not running from 0..n
+    gdf["edge_id"] = [1, 4]
+    gdf.set_index("edge_id", inplace=True)
+    actual = snkit.network.nearest(Point(1.0, 0.9), gdf)
+    assert actual.name == 4
+    assert actual.geometry == LineString([Point(0, 1), Point(1, 1)])
+
+    # set a non-integer index
+    gdf["edge_id"] = ["ab", "cd"]
+    gdf.set_index("edge_id", inplace=True)
+    actual = snkit.network.nearest(Point(1.1, 1.1), gdf)
+    assert actual.name == "cd"
+    assert actual.geometry == LineString([Point(0, 1), Point(1, 1)])

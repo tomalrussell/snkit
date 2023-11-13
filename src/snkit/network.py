@@ -705,7 +705,7 @@ def nearest(geom: Geometry, gdf: GeoDataFrame) -> "pandas.Series[Any]":
     """Find the element of a GeoDataFrame nearest a shapely geometry"""
     try:
         match_idx = gdf.sindex.nearest(geom, return_all=False)[1][0]
-        nearest_geom: "pandas.Series[Any]" = gdf.loc[match_idx]
+        nearest_geom: "pandas.Series[Any]" = gdf.iloc[match_idx]
         return nearest_geom
 
     except TypeError:
