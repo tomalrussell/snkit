@@ -1,13 +1,16 @@
 """Network representation and utilities
 """
+from functools import partial
 import logging
+import multiprocessing
 import os
-from typing import Optional
+from typing import Any, Callable, List, Optional, Set, Tuple, Union
 import warnings
 
 import geopandas
 import numpy as np
 import pandas
+import pyproj
 import shapely.errors
 
 try:
@@ -18,13 +21,14 @@ except ImportError:
     USE_NX = False
 
 from geopandas import GeoDataFrame
+from shapely import Geometry
 from shapely.geometry import (
-    Point,
-    MultiPoint,
-    LineString,
     GeometryCollection,
-    shape,
+    LineString,
     mapping,
+    MultiPoint,
+    Point,
+    shape,
 )
 from shapely.ops import split, linemerge, unary_union
 
@@ -35,9 +39,9 @@ if "SNKIT_PROGRESS" in os.environ and os.environ["SNKIT_PROGRESS"] in ("1", "TRU
     try:
         from tqdm import tqdm
     except ImportError:
-        from snkit.utils import tqdm_standin as tqdm
+        from snkit.utils import tqdm_standin as tqdm  # type: ignore
 else:
-    from snkit.utils import tqdm_standin as tqdm
+    from snkit.utils import tqdm_standin as tqdm  # type: ignore
 
 # optional parallel processing
 if "SNKIT_PROCESSES" in os.environ:
@@ -49,11 +53,18 @@ if "SNKIT_PROCESSES" in os.environ:
             "SNKIT_PROCESSES env var must be a non-negative integer. "
             "Use 0 or unset for serial operation."
         )
-    PARALLEL_PROCESS_COUNT = min([os.cpu_count(), requested_processes])
-    import multiprocessing
-    logging.info(f"SNKIT_PROCESSES={processes_env_var}, using {PARALLEL_PROCESS_COUNT} processes")
+    cpus = os.cpu_count()
+    if cpus is None:
+        cpus = 1
+    PARALLEL_PROCESS_COUNT: int = min([cpus, requested_processes])
+
+    logging.info(
+        f"SNKIT_PROCESSES={processes_env_var}, using {PARALLEL_PROCESS_COUNT} processes"
+    )
 else:
     PARALLEL_PROCESS_COUNT = 0
+
+Number = Union[int, float]
 
 
 class Network:
@@ -71,7 +82,9 @@ class Network:
 
     """
 
-    def __init__(self, nodes=None, edges=None):
+    def __init__(
+        self, nodes: Optional[GeoDataFrame] = None, edges: Optional[GeoDataFrame] = None
+    ):
         """ """
         if nodes is None:
             nodes = GeoDataFrame(geometry=[])
@@ -81,18 +94,23 @@ class Network:
             edges = GeoDataFrame(geometry=[])
         self.edges = edges
 
-    def set_crs(self, crs=None, epsg=None, allow_override=False):
+    def set_crs(
+        self,
+        crs: Optional[pyproj.CRS] = None,
+        epsg: Optional[int] = None,
+        allow_override: bool = False,
+    ) -> None:
         """Set the coordinate reference system (CRS) of the network nodes and
         edges.
 
         Parameters
         ----------
-        crs : pyproj.CRS, optional if epsg is specified
+        crs : optional if epsg is specified
             The value can be anything accepted by pyproj.CRS.from_user_input(),
             such as an authority string (eg “EPSG:4326”) or a WKT string.
-        epsg : int, optional if crs is specified
+        epsg : optional if crs is specified
             EPSG code specifying output projection.
-        allow_override : bool, default False
+        allow_override : default False
             If the nodes or edges GeoDataFrame already has a CRS, allow to
             replace the existing CRS, even when both are not equal.
 
@@ -101,16 +119,18 @@ class Network:
         self.edges.set_crs(crs, epsg, inplace, allow_override)
         self.nodes.set_crs(crs, epsg, inplace, allow_override)
 
-    def to_crs(self, crs=None, epsg=None):
+    def to_crs(
+        self, crs: Optional[pyproj.CRS] = None, epsg: Optional[int] = None
+    ) -> None:
         """Transform network nodes and edges geometries to a new coordinate
         reference system (CRS).
 
         Parameters
         ----------
-        crs : pyproj.CRS, optional if epsg is specified
+        crs : optional if epsg is specified
             The value can be anything accepted by pyproj.CRS.from_user_input(),
             such as an authority string (eg “EPSG:4326”) or a WKT string.
-        epsg : int, optional if crs is specified
+        epsg : optional if crs is specified
             EPSG code specifying output projection.
 
         """
@@ -118,7 +138,13 @@ class Network:
         self.edges.to_crs(crs, epsg, inplace)
         self.nodes.to_crs(crs, epsg, inplace)
 
-    def to_file(self, filename, nodes_layer="nodes", edges_layer="edges", **kwargs):
+    def to_file(
+        self,
+        filename: str,
+        nodes_layer: Optional[str] = "nodes",
+        edges_layer: Optional[str] = "edges",
+        **kwargs: Any,
+    ) -> None:
         """Write nodes and edges to a geographic data file with layers.
 
         Any additional keyword arguments are passed through to `geopandas.GeoDataFrame.to_file`.
@@ -136,18 +162,23 @@ class Network:
         self.edges.to_file(filename, layer=edges_layer, **kwargs)
 
 
-def read_file(filename, nodes_layer="nodes", edges_layer="edges", **kwargs):
+def read_file(
+    filename: str,
+    nodes_layer: Optional[str] = "nodes",
+    edges_layer: Optional[str] = "edges",
+    **kwargs: Any,
+) -> Network:
     """Read a geographic data file with layers containing nodes and edges.
 
     Any additional keyword arguments are passed through to `geopandas.read_file`.
 
     Parameters
     ----------
-    filename : str
+    filename
         Path to geographic data file with layers
-    nodes_layer : str, optional, default 'nodes'
+    nodes_layer :, optional, default 'nodes'
         Layer name for nodes, or None if nodes should not be read.
-    edges_layer : str, optional, default 'edges'
+    edges_layer :, optional, default 'edges'
         Layer name for edges, or None if edges should not be read.
     """
     if nodes_layer is not None:
@@ -163,7 +194,12 @@ def read_file(filename, nodes_layer="nodes", edges_layer="edges", **kwargs):
     return Network(nodes, edges)
 
 
-def add_ids(network, id_col="id", edge_prefix="edge", node_prefix="node"):
+def add_ids(
+    network: Network,
+    id_col: Optional[str] = "id",
+    edge_prefix: Optional[str] = "edge",
+    node_prefix: Optional[str] = "node",
+) -> Network:
     """Add or replace an id column with ascending ids"""
     nodes = network.nodes.copy()
     if not nodes.empty:
@@ -179,7 +215,7 @@ def add_ids(network, id_col="id", edge_prefix="edge", node_prefix="node"):
     return Network(nodes=nodes, edges=edges)
 
 
-def add_topology(network, id_col="id"):
+def add_topology(network: Network, id_col: str = "id") -> Network:
     """Add or replace from_id, to_id to edges"""
     from_ids = []
     to_ids = []
@@ -202,7 +238,7 @@ def add_topology(network, id_col="id"):
     return Network(nodes=network.nodes, edges=edges)
 
 
-def get_endpoints(network):
+def get_endpoints(network: Network) -> GeoDataFrame:
     """Get nodes for each edge endpoint"""
     endpoints = []
     for edge in tqdm(
@@ -224,7 +260,7 @@ def get_endpoints(network):
     return matching_gdf_from_geoms(network.nodes, endpoints)
 
 
-def add_endpoints(network):
+def add_endpoints(network: Network) -> Network:
     """Add nodes at line endpoints"""
     endpoints = get_endpoints(network)
     nodes = concat_dedup([network.nodes, endpoints])
@@ -232,18 +268,17 @@ def add_endpoints(network):
     return Network(nodes=nodes, edges=network.edges)
 
 
-def round_geometries(network, precision=3):
+def round_geometries(network: Network, precision: int = 3) -> Network:
     """Round coordinates of all node points and vertices of edge linestrings to some precision"""
 
-    def _set_precision(geom):
-        return set_precision(geom, precision)
+    _set_precision = partial(set_precision, precision=precision)
 
     network.nodes.geometry = network.nodes.geometry.apply(_set_precision)
     network.edges.geometry = network.edges.geometry.apply(_set_precision)
     return network
 
 
-def split_multilinestrings(network):
+def split_multilinestrings(network: Network) -> Network:
     """
     Create multiple edges from any MultiLineString edge
 
@@ -264,7 +299,7 @@ def split_multilinestrings(network):
     return Network(nodes=network.nodes, edges=split_edges)
 
 
-def merge_multilinestring(geom):
+def merge_multilinestring(geom: Geometry) -> Geometry:
     """Merge a MultiLineString to LineString"""
     try:
         if geom.geom_type == "MultiLineString":
@@ -284,10 +319,10 @@ def merge_multilinestring(geom):
         return GeometryCollection()
 
 
-def snap_nodes(network, threshold=None):
+def snap_nodes(network: Network, threshold: Optional[Number] = None) -> Network:
     """Move nodes (within threshold) to edges"""
 
-    def snap_node(geom):
+    def snap_node(geom: Point) -> Point:
         snap = nearest_point_on_edges(geom, network.edges)
         distance = snap.distance(geom)
         if threshold is not None and distance > threshold:
@@ -312,7 +347,7 @@ def snap_nodes(network, threshold=None):
 
 def _split_edges_at_nodes(
     edges: GeoDataFrame, nodes: GeoDataFrame, tolerance: float
-) -> list:
+) -> List["pandas.Series[Any]"]:
     """Split edges at nodes for a network chunk"""
     split_edges = []
 
@@ -327,7 +362,9 @@ def _split_edges_at_nodes(
     return split_edges
 
 
-def split_edges_at_nodes(network: Network, tolerance: float = 1e-9, chunk_size: Optional[int] = None):
+def split_edges_at_nodes(
+    network: Network, tolerance: Number = 1e-9, chunk_size: Optional[int] = None
+) -> Network:
     """
     Split network edges where they intersect node geometries.
 
@@ -343,33 +380,34 @@ def split_edges_at_nodes(network: Network, tolerance: float = 1e-9, chunk_size: 
     Returns:
         Network with edges split at nodes (within proximity tolerance).
     """
-    split_edges = []
+    split_edges: List["pandas.Series[Any]"] = []
 
     n = len(network.edges)
     if PARALLEL_PROCESS_COUNT > 1:
         if chunk_size is None:
             chunk_size = max([1, int(n / PARALLEL_PROCESS_COUNT)])
         args = [
-            (network.edges.iloc[i: i + chunk_size, :], network.nodes, tolerance)
+            (network.edges.iloc[i : i + chunk_size, :], network.nodes, tolerance)
             for i in range(0, n, chunk_size)
         ]
         with multiprocessing.Pool(PARALLEL_PROCESS_COUNT) as pool:
             results = pool.starmap(_split_edges_at_nodes, args)
 
         # flatten return list
-        split_edges: list = [df for chunk in results for df in chunk]
+        split_edges = [df for chunk in results for df in chunk]
 
     else:
         split_edges = _split_edges_at_nodes(network.edges, network.nodes, tolerance)
 
     # combine dfs
-    edges = pandas.concat(split_edges, axis=0)
-    edges = edges.reset_index().drop("index", axis=1)
+    edges = pandas.concat(split_edges, axis=0).reset_index().drop("index", axis=1)
 
     return Network(nodes=network.nodes, edges=edges)
 
 
-def split_edges_at_intersections(network, tolerance=1e-9):
+def split_edges_at_intersections(
+    network: Network, tolerance: Optional[Number] = 1e-9
+) -> Network:
     """Split network edges where they intersect line geometries"""
     split_edges = []
     split_points = []
@@ -406,7 +444,15 @@ def split_edges_at_intersections(network, tolerance=1e-9):
     return Network(nodes=nodes, edges=edges)
 
 
-def link_nodes_to_edges_within(network, distance, condition=None, tolerance=1e-9):
+NodeEdgeCondition = Callable[["pandas.Series[Any]", "pandas.Series[Any]"], bool]
+
+
+def link_nodes_to_edges_within(
+    network: Network,
+    distance: Number,
+    condition: Optional[NodeEdgeCondition] = None,
+    tolerance: Number = 1e-9,
+) -> Network:
     """Link nodes to all edges within some distance"""
     new_node_geoms = []
     new_edge_geoms = []
@@ -437,7 +483,10 @@ def link_nodes_to_edges_within(network, distance, condition=None, tolerance=1e-9
     return split_edges_at_nodes(unsplit, tolerance)
 
 
-def link_nodes_to_nearest_edge(network, condition=None):
+def link_nodes_to_nearest_edge(
+    network: Network,
+    condition: Optional[NodeEdgeCondition] = None,
+) -> Network:
     """Link nodes to all edges within some distance"""
     new_node_geoms = []
     new_edge_geoms = []
@@ -471,7 +520,9 @@ def link_nodes_to_nearest_edge(network, condition=None):
     return split
 
 
-def merge_edges(network, id_col="id", by=None):
+def merge_edges(
+    network: Network, id_col: Optional[str] = "id", by: Optional[List[str]] = None
+) -> Network:
     """Merge edges that share a node with a connectivity degree of 2
 
     Parameters
@@ -572,16 +623,16 @@ def merge_edges(network, id_col="id", by=None):
     return Network(nodes=nodes, edges=edges)
 
 
-def geometry_column_name(gdf):
+def geometry_column_name(gdf: GeoDataFrame) -> str:
     """Get geometry column name, fall back to 'geometry'"""
     try:
-        geom_col = gdf.geometry.name
+        geom_col: str = gdf.geometry.name
     except AttributeError:
         geom_col = "geometry"
     return geom_col
 
 
-def matching_gdf_from_geoms(gdf, geoms):
+def matching_gdf_from_geoms(gdf: GeoDataFrame, geoms: List[Geometry]) -> GeoDataFrame:
     """Create a geometry-only GeoDataFrame with column name to match an existing GeoDataFrame"""
     geom_col = geometry_column_name(gdf)
     geom_arr = geoms_to_array(geoms)
@@ -590,14 +641,16 @@ def matching_gdf_from_geoms(gdf, geoms):
     return matching_gdf
 
 
-def geoms_to_array(geoms):
+def geoms_to_array(
+    geoms: List[Geometry],
+) -> np.ndarray[List[int], Geometry]:
     geom_arr = np.empty(len(geoms), dtype="object")
     geom_arr[:] = geoms
 
     return geom_arr
 
 
-def concat_dedup(dfs):
+def concat_dedup(dfs: List[pandas.DataFrame]) -> GeoDataFrame:
     """Concatenate a list of GeoDataFrames, dropping duplicate geometries
     - note: repeatedly drops indexes for deduplication to work
     """
@@ -608,41 +661,45 @@ def concat_dedup(dfs):
     return cat_dedup
 
 
-def node_connectivity_degree(node, network):
+def node_connectivity_degree(node: str, network: Network) -> int:
     return len(
         network.edges[(network.edges.from_id == node) | (network.edges.to_id == node)]
     )
 
 
-def drop_duplicate_geometries(gdf, keep="first"):
+def drop_duplicate_geometries(
+    gdf: GeoDataFrame, keep: Optional[str] = "first"
+) -> GeoDataFrame:
     """Drop duplicate geometries from a dataframe"""
     # as of geopandas ~0.6 this should work without explicit conversion to wkb
     # discussed in https://github.com/geopandas/geopandas/issues/521
     return gdf.drop_duplicates([gdf.geometry.name])
 
 
-def nearest_point_on_edges(point, edges):
+def nearest_point_on_edges(point: Point, edges: GeoDataFrame) -> Point:
     """Find nearest point on edges to a point"""
     edge = nearest_edge(point, edges)
     snap = nearest_point_on_line(point, edge.geometry)
     return snap
 
 
-def nearest_node(point, nodes):
+def nearest_node(point: Point, nodes: GeoDataFrame) -> "pandas.Series[Any]":
     """Find nearest node to a point"""
     return nearest(point, nodes)
 
 
-def nearest_edge(point, edges):
+def nearest_edge(point: Point, edges: GeoDataFrame) -> "pandas.Series[Any]":
     """Find nearest edge to a point"""
     return nearest(point, edges)
 
 
-def nearest(geom, gdf):
+def nearest(geom: Geometry, gdf: GeoDataFrame) -> "pandas.Series[Any]":
     """Find the element of a GeoDataFrame nearest a shapely geometry"""
     try:
         match_idx = gdf.sindex.nearest(geom, return_all=False)[1][0]
-        return gdf.loc[match_idx]
+        nearest_geom: "pandas.Series[Any]" = gdf.loc[match_idx]
+        return nearest_geom
+
     except TypeError:
         warnings.warn("Falling back to RTree index method for nearest element")
         matches_idx = gdf.sindex.nearest(geom.bounds)
@@ -653,16 +710,18 @@ def nearest(geom, gdf):
         return nearest_geom
 
 
-def edges_within(point, edges, distance):
+def edges_within(point: Point, edges: GeoDataFrame, distance: Number) -> GeoDataFrame:
     """Find edges within a distance of point"""
     return d_within(point, edges, distance)
 
 
-def edges_intersecting_points(line, edges, tolerance=1e-9):
+def edges_intersecting_points(
+    line: LineString, edges: GeoDataFrame, tolerance: Optional[Number] = 1e-9
+) -> GeoDataFrame:
     """Return intersection points of intersecting edges"""
     hits = edges_intersecting(line, edges, tolerance)
 
-    hits_points = []
+    hits_points: List[Point] = []
     for hit in hits.geometry:
         # first extract the actual intersections from the hits
         # for being new geometrical objects, they are not in the sindex
@@ -690,27 +749,35 @@ def edges_intersecting_points(line, edges, tolerance=1e-9):
     return hits_points
 
 
-def edges_intersecting(line, edges, tolerance=1e-9):
+def edges_intersecting(
+    line: LineString, edges: GeoDataFrame, tolerance: Optional[Number] = 1e-9
+) -> GeoDataFrame:
     """Find edges intersecting line"""
     return intersects(line, edges, tolerance)
 
 
-def nodes_intersecting(line, nodes, tolerance=1e-9):
+def nodes_intersecting(
+    line: LineString, nodes: GeoDataFrame, tolerance: Optional[Number] = 1e-9
+) -> GeoDataFrame:
     """Find nodes intersecting line"""
     return intersects(line, nodes, tolerance)
 
 
-def intersects(geom, gdf, tolerance=1e-9):
+def intersects(
+    geom: Geometry, gdf: GeoDataFrame, tolerance: Optional[Number] = 1e-9
+) -> GeoDataFrame:
     """Find the subset of a GeoDataFrame intersecting with a shapely geometry"""
     return _intersects(geom, gdf, tolerance)
 
 
-def d_within(geom, gdf, distance):
+def d_within(geom: Geometry, gdf: GeoDataFrame, distance: Number) -> GeoDataFrame:
     """Find the subset of a GeoDataFrame within some distance of a shapely geometry"""
     return _intersects(geom, gdf, distance)
 
 
-def _intersects(geom, gdf, tolerance=1e-9):
+def _intersects(
+    geom: Geometry, gdf: GeoDataFrame, tolerance: Optional[Number] = 1e-9
+) -> GeoDataFrame:
     if geom.is_empty:
         return geopandas.GeoDataFrame()
     buf = geom.buffer(tolerance)
@@ -725,13 +792,13 @@ def _intersects(geom, gdf, tolerance=1e-9):
         return _intersects_gdf(buf, gdf)
 
 
-def _intersects_gdf(geom, gdf):
+def _intersects_gdf(geom: Geometry, gdf: GeoDataFrame) -> GeoDataFrame:
     candidate_idxs = list(gdf.sindex.intersection(geom.bounds))
     candidates = gdf.iloc[candidate_idxs]
     return candidates[candidates.intersects(geom)]
 
 
-def line_endpoints(line):
+def line_endpoints(line: LineString) -> Tuple[Point, Point]:
     """Return points at first and last vertex of a line"""
     try:
         coords = np.array(line.coords)
@@ -743,7 +810,9 @@ def line_endpoints(line):
     return start, end
 
 
-def intersection_endpoints(geom, output=None):
+def intersection_endpoints(
+    geom: Geometry, output: Optional[List[Point]] = None
+) -> List[Point]:
     """Return the points from an intersection geometry
 
     It extracts the starting and ending points of intersection
@@ -776,7 +845,11 @@ def intersection_endpoints(geom, output=None):
     return output
 
 
-def split_edge_at_points(edge, points, tolerance=1e-9):
+def split_edge_at_points(
+    edge: geopandas.GeoSeries,
+    points: Union[Point, MultiPoint],
+    tolerance: Optional[Number] = 1e-9,
+) -> GeoDataFrame:
     """Split edge at point/multipoint"""
     try:
         segments = split_line(edge.geometry, points, tolerance)
@@ -790,7 +863,11 @@ def split_edge_at_points(edge, points, tolerance=1e-9):
     return edges
 
 
-def split_line(line, points, tolerance=1e-9):
+def split_line(
+    line: LineString,
+    points: Union[Point, MultiPoint],
+    tolerance: Optional[Number] = 1e-9,
+) -> list[LineString]:
     """Split line at point or multipoint, within some tolerance"""
     to_split = snap_line(line, points, tolerance)
     # when the splitter is a self-intersection point, shapely splits in
@@ -803,7 +880,9 @@ def split_line(line, points, tolerance=1e-9):
     return list(split(to_split, points).geoms)
 
 
-def snap_line(line, points, tolerance=1e-9):
+def snap_line(
+    line: LineString, points: Point | MultiPoint, tolerance: Optional[Number] = 1e-9
+) -> LineString:
     """Snap a line to points within tolerance, inserting vertices as necessary"""
     if points.geom_type == "Point":
         if points.distance(line) < tolerance:
@@ -815,7 +894,7 @@ def snap_line(line, points, tolerance=1e-9):
     return line
 
 
-def add_vertex(line, point):
+def add_vertex(line: LineString, point: Point) -> LineString:
     """Add a vertex to a line at a point"""
     v_idx = nearest_vertex_idx_on_line(point, line)
     point_coords = np.array(point.coords)[0]
@@ -846,7 +925,7 @@ def add_vertex(line, point):
     return LineString(new_coords)
 
 
-def nearest_vertex_idx_on_line(point, line):
+def nearest_vertex_idx_on_line(point: Point, line: LineString) -> int:
     """Return the index of nearest vertex to a point on a line"""
     # distance to all points is calculated here - and this is called once per splitting point
     # any way to avoid this m x n behaviour?
@@ -863,12 +942,12 @@ def nearest_vertex_idx_on_line(point, line):
     return nearest_idx
 
 
-def nearest_point_on_line(point, line):
+def nearest_point_on_line(point: Point, line: LineString) -> Point:
     """Return the nearest point on a line"""
     return line.interpolate(line.project(point))
 
 
-def set_precision(geom, precision):
+def set_precision(geom: Geometry, precision: int) -> Geometry:
     """Set geometry precision"""
     geom_mapping = mapping(geom)
     geom_mapping["coordinates"] = np.round(
@@ -877,7 +956,9 @@ def set_precision(geom, precision):
     return shape(geom_mapping)
 
 
-def to_networkx(network, directed=False, weight_col=None):
+def to_networkx(
+    network: Network, directed: bool = False, weight_col: Optional[str] = None
+) -> nx.Graph | nx.DiGraph:
     """Return a networkx graph"""
     if not USE_NX:
         raise ImportError("No module named networkx")
@@ -919,7 +1000,7 @@ def to_networkx(network, directed=False, weight_col=None):
         return G
 
 
-def get_connected_components(network):
+def get_connected_components(network: Network) -> List[Set[Any]]:
     """Get connected components within network and id to each individual graph"""
     if not USE_NX:
         raise ImportError("No module named networkx")
@@ -932,7 +1013,7 @@ def add_component_ids(network: Network, id_col: str = "component_id") -> Network
     """Add column of connected component IDs to network edges and nodes"""
 
     # get connected components in descending size order
-    connected_parts: list[set] = get_connected_components(network)
+    connected_parts = get_connected_components(network)
 
     # init id_col
     network.edges[id_col] = 0
