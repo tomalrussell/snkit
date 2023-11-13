@@ -44,10 +44,7 @@ setup(
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
     setup_requires=["setuptools_scm"],
-    install_requires=[
-        "geopandas>=0.13",
-        "shapely>=2.0",
-    ],
+    install_requires=["geopandas>=0.13", "shapely>=2.0", "numpy", "pandas"],
     extras_require={
         "dev": [
             "black",
