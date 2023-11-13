@@ -21,6 +21,7 @@ from sphinx.apidoc import main as run_apidoc
 __location__ = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.join(__location__, "..", "..", "src"))
 
+
 # mock modules which we can avoid installing for docs-building
 class Mock(MagicMock):
     @classmethod
@@ -75,6 +76,7 @@ run_apidoc(
 )
 
 # -- General configuration
+
 
 # Extra styles, found in _static
 def setup(app):

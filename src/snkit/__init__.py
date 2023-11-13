@@ -14,9 +14,9 @@ __license__ = "mit"
 try:
     __version__ = pkg_resources.get_distribution(__name__).version
 except pkg_resources.DistributionNotFound:
-    __version__ = 'unknown'
+    __version__ = "unknown"
 
 
 # Define what should be imported as * when a client writes::
 #   from snkit import *
-__all__ = ['Network']
+__all__ = ["Network"]

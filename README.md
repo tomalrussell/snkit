@@ -85,6 +85,32 @@ Run the tests:
 
     python -m pytest tests/
 
+### Development checks
+
+Configure the [pre-commit](https://pre-commit.com/) checks:
+
+    pre-commit install
+
+There are several tools and helpers set up to run automatically, on `git commit`
+and in [GitHub Actions](https://docs.github.com/en/actions) continuous
+integration steps. Each of these can be run locally too.
+
+Run the tests using [pytest](https://docs.pytest.org):
+
+    python -m pytest
+
+Run formatting using [black](https://black.readthedocs.io/):
+
+    black .
+
+Run linting using [ruff](https://docs.astral.sh/ruff/):
+
+    ruff check .
+
+Run type-checking using [mypy](https://mypy.readthedocs.io/):
+
+    mypy --strict .
+
 ## Testimonials 💯 👍 😊
 
 > With five lines of snkit I replaced four or five hundred lines of custom code!

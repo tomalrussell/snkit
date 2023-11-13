@@ -1,4 +1,13 @@
 [tool.pytest.ini_options]
-pythonpath = [
-    "src",
-]
+pythonpath = ["src"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 120
+
+[tool.mypy]
+exclude = ['venv', '.venv', 'build', 'docs', 'tests']
+
+[[tool.mypy.overrides]]
+module = ["geopandas", "igraph", "networkx", "numpy", "scipy.*", "shapely.*"]
+ignore_missing_imports = true

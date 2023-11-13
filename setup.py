@@ -9,7 +9,7 @@ from setuptools import find_packages
 from setuptools import setup
 
 
-def readme():
+def readme() -> str:
     """Read README contents"""
     with open("README.md", encoding="utf8") as f:
         return f.read()
@@ -45,15 +45,20 @@ setup(
     ],
     setup_requires=["setuptools_scm"],
     install_requires=[
-        # eg: 'aspectlib==1.1.1', 'six>=1.7',
         "geopandas>=0.13",
         "shapely>=2.0",
     ],
     extras_require={
-        "dev": ["black", "nbstripout", "pytest", "pytest-cov"],
-        # eg:
-        #   'rst': ['docutils>=0.11'],
-        #   ':python_version=="2.6"': ['argparse'],
+        "dev": [
+            "black",
+            "mypy",
+            "nbstripout",
+            "pre-commit",
+            "pytest",
+            "pytest-cov",
+            "ruff",
+        ],
+        "docs": ["sphinx", "m2r2"],
         "networkx": ["networkx>=3.0"],
     },
     entry_points={

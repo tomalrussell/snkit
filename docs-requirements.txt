@@ -3,3 +3,4 @@
 m2r2
 numpy
 pandas
+sphinx
