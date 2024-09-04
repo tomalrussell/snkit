@@ -16,7 +16,7 @@ import os
 import sys
 from unittest.mock import MagicMock
 
-from sphinx.apidoc import main as run_apidoc
+from sphinx.ext.apidoc import main as run_apidoc
 
 __location__ = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.join(__location__, "..", "..", "src"))
@@ -66,12 +66,11 @@ templates_dir = os.path.join(__location__, "_templates")
 
 run_apidoc(
     [
-        "sphinx-apidoc",
-        "-M",
-        "-o",
-        output_dir,
-        module_dir,
         "--force",
+        "--module-first",
+        "--output-dir",
+        output_dir,
+        module_dir
     ]
 )
 
@@ -80,7 +79,7 @@ run_apidoc(
 
 # Extra styles, found in _static
 def setup(app):
-    app.add_stylesheet("theme_tweaks.css")
+    app.add_css_file("theme_tweaks.css")
 
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -93,8 +92,9 @@ def setup(app):
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
+    "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
-    "m2r2",
+    "myst_parser",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -112,7 +112,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

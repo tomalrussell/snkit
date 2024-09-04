@@ -2,6 +2,7 @@
 Getting Started
 ===============
 
-.. mdinclude:: ../../README.md
-   :start-line: 63
-   :end-line: 78
+.. include:: ../../README.md
+   :parser: myst_parser.sphinx_
+   :start-line: 56
+   :end-line: 72
