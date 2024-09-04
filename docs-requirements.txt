@@ -1,6 +1,6 @@
 # Add your pinned requirements for building docs (exclude any packages which can safely be
 # mocked in docs/conf.py
-m2r2
+myst-parser
 numpy
 pandas
 sphinx
