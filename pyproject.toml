@@ -1,3 +1,52 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "snkit"
+dynamic = ["version"]
+description = "a spatial networks toolkit"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Tom Russell", email = "tomalrussell@gmail.com" }]
+keywords = []
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Utilities",
+]
+dependencies = ["geopandas>=1.0", "numpy", "pandas", "shapely>=2.0"]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "mypy",
+    "nbstripout",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+docs = ["myst-parser", "sphinx"]
+networkx = ["networkx>=3.0"]
+
+[project.urls]
+Homepage = "https://snkit.readthedocs.io/en/latest/"
+Source = "https://github.com/tomalrussell/snkit"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/snkit/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["/src"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 
