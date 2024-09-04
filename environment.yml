@@ -1,0 +1,15 @@
+name: snkit-dev
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - geopandas
+  - networkx
+  - black
+  - mypy
+  - ruff
+  - nbstripout
+  - pre-commit
+  - pip:
+      - -e .[dev,docs,networkx]
